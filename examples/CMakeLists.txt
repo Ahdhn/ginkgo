@@ -22,6 +22,7 @@ set(EXAMPLES_LIST
     custom-stopping-criterion
     ginkgo-overhead
     minimal-cuda-solver
+    multigrid-preconditioned-solver
     par-ilu-convergence
     performance-debugging
     preconditioner-export
