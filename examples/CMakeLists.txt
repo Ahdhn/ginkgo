@@ -21,6 +21,7 @@ set(EXAMPLES_LIST
     ${EXAMPLES_EXEC_LIST}
     custom-matrix-format
     custom-stopping-criterion
+    distributed-spmv
     ginkgo-overhead
     heat-equation
     minimal-cuda-solver
