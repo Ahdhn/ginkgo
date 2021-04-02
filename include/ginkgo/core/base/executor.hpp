@@ -1125,6 +1125,14 @@ public:
         return this->get_exec_info().num_pu_per_cu;
     }
 
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, size_type size,
+                    KernelArgs &&... args) const;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, dim<2> size,
+                    KernelArgs &&... args) const;
+
 protected:
     OmpExecutor()
     {
@@ -1250,6 +1258,14 @@ public:
     void synchronize() const override;
 
     void run(const Operation &op) const override;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, size_type size,
+                    KernelArgs &&... args) const;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, dim<2> size,
+                    KernelArgs &&... args) const;
 
     /**
      * Get the CUDA device id of the device associated to this executor.
@@ -1459,6 +1475,14 @@ public:
 
     void run(const Operation &op) const override;
 
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, size_type size,
+                    KernelArgs &&... args) const;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, dim<2> size,
+                    KernelArgs &&... args) const;
+
     /**
      * Get the HIP device id of the device associated to this executor.
      */
@@ -1665,6 +1689,14 @@ public:
     void synchronize() const override;
 
     void run(const Operation &op) const override;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, size_type size,
+                    KernelArgs &&... args) const;
+
+    template <typename KernelFunction, typename... KernelArgs>
+    void run_kernel(KernelFunction fn, dim<2> size,
+                    KernelArgs &&... args) const;
 
     /**
      * Get the DPCPP device id of the device associated to this executor.
