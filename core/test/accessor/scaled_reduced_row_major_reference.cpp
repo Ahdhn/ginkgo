@@ -105,7 +105,7 @@ TYPED_TEST(ScaledReducedRowMajorReference, ReadWithDifferentScalar)
 {
     using ar_type = typename TestFixture::ar_type;
     using st_type = typename TestFixture::st_type;
-    auto new_scalar = ar_type{std::is_signed<ar_type>::value ? -3 : 3};
+    ar_type new_scalar{std::is_signed<ar_type>::value ? -3 : 3};
     this->scalar = new_scalar;
 
     ar_type test = this->get_ref();
@@ -415,7 +415,7 @@ TYPED_TEST(ScaledReducedRowMajorReference, MinusEquals)
 TYPED_TEST(ScaledReducedRowMajorReference, Abs)
 {
     using ar_type = typename TestFixture::ar_type;
-    const auto expected_res{this->get_conv_storage()};
+    const auto expected_res = this->get_conv_storage();
 
     auto res1 = abs(this->get_ref());
     auto res2 = abs(this->get_const_ref());
@@ -436,7 +436,7 @@ TYPED_TEST(ScaledReducedRowMajorReference, Real)
 {
     using ar_type = typename TestFixture::ar_type;
     using gko::acc::real;  // required by some compilers, so ADL works properly
-    const auto expected_res{this->get_conv_storage()};
+    const auto expected_res = this->get_conv_storage();
 
     auto res1 = real(this->get_ref());
     auto res2 = real(this->get_const_ref());
@@ -449,7 +449,7 @@ TYPED_TEST(ScaledReducedRowMajorReference, Real)
 TYPED_TEST(ScaledReducedRowMajorReference, Imag)
 {
     using ar_type = typename TestFixture::ar_type;
-    const auto expected_res{0};
+    const ar_type expected_res{0};
     using gko::acc::imag;  // required by some compilers, so ADL works properly
 
     auto res1 = imag(this->get_ref());
@@ -464,7 +464,7 @@ TYPED_TEST(ScaledReducedRowMajorReference, Conj)
 {
     using ar_type = typename TestFixture::ar_type;
     using gko::acc::conj;  // required by some compilers, so ADL works properly
-    const auto expected_res{this->get_conv_storage()};
+    const auto expected_res = this->get_conv_storage();
 
     auto res1 = conj(this->get_ref());
     auto res2 = conj(this->get_const_ref());
@@ -479,8 +479,8 @@ TYPED_TEST(ScaledReducedRowMajorReference, squared_norm)
     using ar_type = typename TestFixture::ar_type;
     using gko::acc::squared_norm;  // required by some compilers, so ADL works
                                    // properly
-    const auto expected_res{this->get_conv_storage() *
-                            this->get_conv_storage()};
+    const auto expected_res =
+        this->get_conv_storage() * this->get_conv_storage();
 
     auto res1 = squared_norm(this->get_ref());
     auto res2 = squared_norm(this->get_const_ref());
