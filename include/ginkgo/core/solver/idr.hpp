@@ -81,7 +81,7 @@ namespace solver {
  */
 template <typename ValueType = default_precision>
 class Idr : public EnableLinOp<Idr<ValueType>>,
-            public Preconditionable,
+            public PreconditionedIterativeSolverBase<ValueType>,
             public Transposable {
     friend class EnableLinOp<Idr>;
     friend class EnablePolymorphicObject<Idr, LinOp>;
@@ -89,16 +89,6 @@ class Idr : public EnableLinOp<Idr<ValueType>>,
 public:
     using value_type = ValueType;
     using transposed_type = Idr<ValueType>;
-
-    /**
-     * Gets the system operator (matrix) of the linear system.
-     *
-     * @return the system operator (matrix)
-     */
-    std::shared_ptr<const LinOp> get_system_matrix() const
-    {
-        return system_matrix_;
-    }
 
     std::unique_ptr<LinOp> transpose() const override;
 
@@ -110,28 +100,6 @@ public:
      * @return true as iterative solvers use the data in x as an initial guess.
      */
     bool apply_uses_initial_guess() const override { return true; }
-
-    /**
-     * Gets the stopping criterion factory of the solver.
-     *
-     * @return the stopping criterion factory
-     */
-    std::shared_ptr<const stop::CriterionFactory> get_stop_criterion_factory()
-        const
-    {
-        return stop_criterion_factory_;
-    }
-
-    /**
-     * Sets the stopping criterion of the solver.
-     *
-     * @param other  the new stopping criterion factory
-     */
-    void set_stop_criterion_factory(
-        std::shared_ptr<const stop::CriterionFactory> other)
-    {
-        stop_criterion_factory_ = std::move(other);
-    }
 
     /**
      * Gets the subspace dimension of the solver.
@@ -263,31 +231,16 @@ protected:
                  std::shared_ptr<const LinOp> system_matrix)
         : EnableLinOp<Idr>(factory->get_executor(),
                            gko::transpose(system_matrix->get_size())),
+          PreconditionedIterativeSolverBase<ValueType>{
+              std::move(system_matrix), factory->get_parameters()},
           parameters_{factory->get_parameters()},
-          system_matrix_{std::move(system_matrix)}
-    {
-        if (parameters_.generated_preconditioner) {
-            GKO_ASSERT_EQUAL_DIMENSIONS(parameters_.generated_preconditioner,
-                                        this);
-            set_preconditioner(parameters_.generated_preconditioner);
-        } else if (parameters_.preconditioner) {
-            set_preconditioner(
-                parameters_.preconditioner->generate(system_matrix_));
-        } else {
-            set_preconditioner(matrix::Identity<ValueType>::create(
-                this->get_executor(), this->get_size()[0]));
-        }
-        stop_criterion_factory_ =
-            stop::combine(std::move(parameters_.criteria));
-        subspace_dim_ = parameters_.subspace_dim;
-        kappa_ = parameters_.kappa;
-        deterministic_ = parameters_.deterministic;
-        complex_subspace_ = parameters_.complex_subspace;
-    }
+          subspace_dim_{parameters_.subspace_dim},
+          kappa_{parameters_.kappa},
+          deterministic_{parameters_.deterministic},
+          complex_subspace_{parameters_.complex_subspace}
+    {}
 
 private:
-    std::shared_ptr<const LinOp> system_matrix_{};
-    std::shared_ptr<const stop::CriterionFactory> stop_criterion_factory_{};
     size_type subspace_dim_;
     remove_complex<ValueType> kappa_;
     bool deterministic_;

@@ -82,6 +82,7 @@ class UpperTrs;
  */
 template <typename ValueType = default_precision, typename IndexType = int32>
 class LowerTrs : public EnableLinOp<LowerTrs<ValueType, IndexType>>,
+                 public SolverBase<matrix::Csr<ValueType, IndexType>>,
                  public Transposable {
     friend class EnableLinOp<LowerTrs>;
     friend class EnablePolymorphicObject<LowerTrs, LinOp>;
@@ -91,17 +92,6 @@ public:
     using value_type = ValueType;
     using index_type = IndexType;
     using transposed_type = UpperTrs<ValueType, IndexType>;
-
-    /**
-     * Gets the system operator (CSR matrix) of the linear system.
-     *
-     * @return the system operator (CSR matrix)
-     */
-    std::shared_ptr<const matrix::Csr<ValueType, IndexType>> get_system_matrix()
-        const
-    {
-        return system_matrix_;
-    }
 
     std::unique_ptr<LinOp> transpose() const override;
 
@@ -123,7 +113,33 @@ public:
     GKO_ENABLE_LIN_OP_FACTORY(LowerTrs, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);
 
+    LowerTrs &operator=(const LowerTrs &other)
+    {
+        // copy size
+        this->LinOp::operator=(other);
+        // copy system matrix
+        this->SolverBase<MatrixType>::operator=(other);
+        this->parameters_ = other.parameters_;
+        this->init_trs_solve_struct();
+        this->generate();
+        return *this;
+    }
+
+    LowerTrs &operator=(LowerTrs &&other)
+    {
+        // move size
+        this->LinOp::operator=(std::move(other));
+        // move system matrix
+        this->SolverBase<MatrixType>::operator=(std::move(other));
+        this->parameters_ = other.parameters_;
+        this->init_trs_solve_struct();
+        this->generate();
+        return *this;
+    }
+
 protected:
+    using MatrixType = matrix::Csr<ValueType, IndexType>;
+
     void init_trs_solve_struct();
 
     void apply_impl(const LinOp *b, LinOp *x) const override;
@@ -145,27 +161,16 @@ protected:
                       std::shared_ptr<const LinOp> system_matrix)
         : EnableLinOp<LowerTrs>(factory->get_executor(),
                                 gko::transpose(system_matrix->get_size())),
-          parameters_{factory->get_parameters()},
-          system_matrix_{}
+          SolverBase<MatrixType>{copy_and_convert_to<MatrixType>(
+              factory->get_executor(), system_matrix)},
+          parameters_{factory->get_parameters()}
     {
-        using CsrMatrix = matrix::Csr<ValueType, IndexType>;
-
         GKO_ASSERT_IS_SQUARE_MATRIX(system_matrix);
-        // This is needed because it does not make sense to call the copy and
-        // convert if the existing matrix is empty.
-        const auto exec = this->get_executor();
-        if (!system_matrix->get_size()) {
-            system_matrix_ = CsrMatrix::create(exec);
-        } else {
-            system_matrix_ =
-                copy_and_convert_to<CsrMatrix>(exec, system_matrix);
-        }
         this->init_trs_solve_struct();
         this->generate();
     }
 
 private:
-    std::shared_ptr<const matrix::Csr<ValueType, IndexType>> system_matrix_{};
     std::shared_ptr<solver::SolveStruct> solve_struct_;
 };
 

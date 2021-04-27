@@ -98,6 +98,7 @@ namespace solver {
  * @ingroup solver
  * @ingroup LinOp
  */
+template <typename MatrixType = LinOp>
 class SolverBase {
 public:
     virtual ~SolverBase() = default;
@@ -107,22 +108,44 @@ public:
      *
      * @return the system matrix operator used by the solver
      */
-    std::shared_ptr<const LinOp> get_system_matrix() const;
+    std::shared_ptr<const MatrixType> get_system_matrix() const
+    {
+        return system_matrix_;
+    }
 
-    SolverBase &operator=(const SolverBase &other);
+    SolverBase &operator=(const SolverBase &other)
+    {
+        auto this_matrix = this->get_system_matrix();
+        auto other_matrix = other.get_system_matrix();
+        if (other_matrix == nullptr || this_matrix == nullptr ||
+            other_matrix->get_executor() == this_matrix->get_executor()) {
+            this->system_matrix_ = other_matrix;
+        } else {  // both system matrices are non-null with different executors
+            this->system_matrix_ =
+                clone(this_matrix->get_executor(), other_matrix);
+        }
+        return *this;
+    }
 
-    SolverBase &operator=(SolverBase &&other);
+    SolverBase &operator=(SolverBase &&other)
+    {
+        *this = other;
+        other.system_matrix_ = nullptr;
+        return *this;
+    }
 
-    SolverBase();
+    SolverBase() : SolverBase{nullptr} {}
 
-    SolverBase(std::shared_ptr<const LinOp> system_matrix);
+    SolverBase(std::shared_ptr<const MatrixType> system_matrix)
+        : system_matrix_{std::move(system_matrix)}
+    {}
 
-    SolverBase(const SolverBase &);
+    SolverBase(const SolverBase &other) : SolverBase{} { *this = other; }
 
-    SolverBase(SolverBase &&);
+    SolverBase(SolverBase &&other) : SolverBase{} { *this = std::move(other); }
 
 private:
-    std::shared_ptr<const LinOp> system_matrix_;
+    std::shared_ptr<const MatrixType> system_matrix_;
 };
 
 
@@ -133,7 +156,7 @@ private:
  * @ingroup solver
  * @ingroup LinOp
  */
-class IterativeSolverBase : public SolverBase {
+class IterativeSolverBase : public SolverBase<LinOp> {
 public:
     /**
      * Gets the stopping criterion factory of the solver.

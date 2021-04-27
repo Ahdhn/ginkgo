@@ -94,54 +94,6 @@ Preconditionable::Preconditionable(Preconditionable &&other)
 namespace solver {
 
 
-std::shared_ptr<const LinOp> SolverBase::get_system_matrix() const
-{
-    return system_matrix_;
-}
-
-
-SolverBase &SolverBase::operator=(const SolverBase &other)
-{
-    auto this_matrix = this->get_system_matrix();
-    auto other_matrix = other.get_system_matrix();
-    if (other_matrix == nullptr || this_matrix == nullptr ||
-        other_matrix->get_executor() == this_matrix->get_executor()) {
-        this->system_matrix_ = other_matrix;
-    } else {  // both system matrices are non-null with different executors
-        this->system_matrix_ = clone(this_matrix->get_executor(), other_matrix);
-    }
-    return *this;
-}
-
-
-SolverBase &SolverBase::operator=(SolverBase &&other)
-{
-    *this = other;
-    other.system_matrix_ = nullptr;
-    return *this;
-}
-
-
-SolverBase::SolverBase() : SolverBase{nullptr} {}
-
-
-SolverBase::SolverBase(std::shared_ptr<const LinOp> system_matrix)
-    : system_matrix_{std::move(system_matrix)}
-{}
-
-
-SolverBase::SolverBase(const SolverBase &other) : SolverBase{}
-{
-    *this = other;
-}
-
-
-SolverBase::SolverBase(SolverBase &&other) : SolverBase{}
-{
-    *this = std::move(other);
-}
-
-
 std::shared_ptr<const stop::CriterionFactory>
 IterativeSolverBase::get_stop_criterion_factory() const
 {
