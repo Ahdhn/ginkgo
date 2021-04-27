@@ -240,6 +240,22 @@ public:
      */
     virtual bool apply_uses_initial_guess() const { return false; }
 
+    LinOp &operator=(const LinOp &) = default;
+
+    LinOp &operator=(LinOp &&other)
+    {
+        this->set_size(other.get_size());
+        other.set_size({});
+        return *this;
+    }
+
+    LinOp(const LinOp &) = default;
+
+    LinOp(LinOp &&other) : LinOp{other.get_executor(), other.get_size()}
+    {
+        other.set_size({});
+    }
+
 protected:
     /**
      * Creates a linear operator.
@@ -615,42 +631,6 @@ public:
      * @param data  the matrix_data structure
      */
     virtual void write(matrix_data<ValueType, IndexType> &data) const = 0;
-};
-
-
-/**
- * A LinOp implementing this interface can be preconditioned.
- *
- * @ingroup precond
- * @ingroup LinOp
- */
-class Preconditionable {
-public:
-    virtual ~Preconditionable() = default;
-
-    /**
-     * Returns the preconditioner operator used by the Preconditionable.
-     *
-     * @return the preconditioner operator used by the Preconditionable
-     */
-    virtual std::shared_ptr<const LinOp> get_preconditioner() const
-    {
-        return preconditioner_;
-    }
-
-    /**
-     * Sets the preconditioner operator used by the Preconditionable.
-     *
-     * @param new_precond  the new preconditioner operator used by the
-     *                     Preconditionable
-     */
-    virtual void set_preconditioner(std::shared_ptr<const LinOp> new_precond)
-    {
-        preconditioner_ = new_precond;
-    }
-
-private:
-    std::shared_ptr<const LinOp> preconditioner_{};
 };
 
 
