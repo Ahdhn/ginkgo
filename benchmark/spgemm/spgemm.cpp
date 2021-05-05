@@ -44,7 +44,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <numeric>
 #include <random>
-#include <third_party/benchmark_wrappers.hpp>
 #include <typeinfo>
 #include <unordered_set>
 
@@ -53,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "benchmark/utils/loggers.hpp"
 #include "benchmark/utils/spmv_common.hpp"
 #include "core/test/utils/matrix_generator.hpp"
+
 
 using etype = double;
 #ifdef GKO_SPGEMM_LONG
@@ -69,38 +69,13 @@ const std::map<std::string,
                const std::function<std::shared_ptr<gko::LinOp>(
                    std::shared_ptr<gko::Executor>, const mat_data &)>>
     format_map{
-#ifdef GKO_SPGEMM_HAS_NSPARSE
-        {"nsparse",
+        {"classical",
          [](std::shared_ptr<gko::Executor> exec, const mat_data &data) {
-             auto mtx = gko::NSparseCsr<etype>::create(exec, data.size);
+             auto mtx = Mtx::create(exec, data.size, data.nonzeros.size(),
+                                    std::make_shared<Mtx::classical>());
              mtx->read(data);
              return gko::share(mtx);
          }},
-#endif
-#ifdef GKO_SPGEMM_HAS_ACSPGEMM
-        {"acspgemm",
-         [](std::shared_ptr<gko::Executor> exec, const mat_data &data) {
-             auto mtx = gko::AcCsr<etype>::create(exec, data.size);
-             mtx->read(data);
-             return gko::share(mtx);
-         }},
-#endif
-#ifdef GKO_SPGEMM_HAS_SPECK
-        {"speck",
-         [](std::shared_ptr<gko::Executor> exec, const mat_data &data) {
-             auto mtx = gko::SpeckCsr<etype>::create(exec, data.size);
-             mtx->read(data);
-             return gko::share(mtx);
-         }},
-#endif
-#ifdef GKO_SPGEMM_HAS_KOKKOS
-        {"kokkos",
-         [](std::shared_ptr<gko::Executor> exec, const mat_data &data) {
-             auto mtx = gko::KokkosCsr<etype>::create(exec, data.size);
-             mtx->read(data);
-             return gko::share(mtx);
-         }},
-#endif
         {"sparselib",
          [](std::shared_ptr<gko::Executor> exec, const mat_data &data) {
              auto mtx = Mtx::create(exec, data.size, data.nonzeros.size(),
@@ -117,26 +92,6 @@ DEFINE_int32(rowlength, 10,
 
 std::shared_ptr<Mtx> get_csr_base(std::shared_ptr<gko::LinOp> op)
 {
-#ifdef GKO_SPGEMM_HAS_NSPARSE
-    if (dynamic_cast<gko::NSparseCsr<etype> *>(op.get())) {
-        return gko::as<gko::NSparseCsr<etype>>(op)->get_matrix();
-    }
-#endif
-#ifdef GKO_SPGEMM_HAS_ACSPGEMM
-    if (dynamic_cast<gko::AcCsr<etype> *>(op.get())) {
-        return gko::as<gko::AcCsr<etype>>(op)->get_matrix();
-    }
-#endif
-#ifdef GKO_SPGEMM_HAS_SPECK
-    if (dynamic_cast<gko::SpeckCsr<etype> *>(op.get())) {
-        return gko::as<gko::SpeckCsr<etype>>(op)->get_matrix();
-    }
-#endif
-#ifdef GKO_SPGEMM_HAS_KOKKOS
-    if (dynamic_cast<gko::KokkosCsr<etype> *>(op.get())) {
-        return gko::as<gko::KokkosCsr<etype>>(op)->get_matrix();
-    }
-#endif
     return gko::as<Mtx>(op);
 }
 
@@ -204,34 +159,9 @@ DEFINE_string(
     "random values, at most -rowlength non-zeros per row\ndense: B is a "
     "'dense' sparse matrix with -rowlength columns and non-zeros per row");
 
-// workaround as #ifdefs are disallowed inside string literals in some compilers
-#ifdef GKO_SPGEMM_HAS_NSPARSE
-#define GKO_SPGEMM_STRATEGY_NSPARSE ",nsparse"
-#else
-#define GKO_SPGEMM_STRATEGY_NSPARSE ""
-#endif
-#ifdef GKO_SPGEMM_HAS_ACSPGEMM
-#define GKO_SPGEMM_STRATEGY_ACSPGEMM ",acspgemm"
-#else
-#define GKO_SPGEMM_STRATEGY_ACSPGEMM ""
-#endif
-#ifdef GKO_SPGEMM_HAS_SPECK
-#define GKO_SPGEMM_STRATEGY_SPECK ",speck"
-#else
-#define GKO_SPGEMM_STRATEGY_SPECK ""
-#endif
-#ifdef GKO_SPGEMM_HAS_KOKKOS
-#define GKO_SPGEMM_STRATEGY_KOKKOS ",kokkos"
-#else
-#define GKO_SPGEMM_STRATEGY_KOKKOS ""
-#endif
-#define GKO_SPGEMM_STRATEGY_STR                                          \
-    "sparselib" GKO_SPGEMM_STRATEGY_NSPARSE GKO_SPGEMM_STRATEGY_ACSPGEMM \
-        GKO_SPGEMM_STRATEGY_SPECK GKO_SPGEMM_STRATEGY_KOKKOS
-
-DEFINE_string(strategies, GKO_SPGEMM_STRATEGY_STR,
+DEFINE_string(strategies, "classical,sparselib",
               "Comma-separated list of SpGEMM strategies: "
-              "sparselib" GKO_SPGEMM_STRATEGY_STR);
+              "classical,sparselib");
 
 
 DEFINE_bool(compute_work, false, "Compute FLOP and nnz count of the SpGEMM");

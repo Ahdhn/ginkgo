@@ -53,6 +53,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "benchmark/utils/spmv_common.hpp"
 #include "core/test/utils/matrix_generator.hpp"
 
+
 using etype = double;
 #ifdef GKO_SPGEAM_LONG
 using itype = gko::int64;
