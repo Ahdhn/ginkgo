@@ -101,7 +101,8 @@ std::shared_ptr<Mtx> build_mtx2(std::shared_ptr<gko::Executor> exec,
         nonzero.row = permutation[nonzero.row];
     }
     data.ensure_row_major_order();
-    auto result = Mtx::create(exec, data.size, data.nonzeros.size());
+    auto result =
+        gko::share(Mtx::create(exec, data.size, data.nonzeros.size()));
     result->read(data);
     return result;
 }
