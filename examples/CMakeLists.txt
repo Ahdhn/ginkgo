@@ -22,7 +22,7 @@ set(EXAMPLES_LIST
     custom-matrix-format
     custom-stopping-criterion
     distributed-spmv
-    #distributed-solver
+    distributed-solver
     ginkgo-overhead
     heat-equation
     minimal-cuda-solver
