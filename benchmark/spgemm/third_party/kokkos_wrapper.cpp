@@ -1,5 +1,5 @@
 /*******************************<GINKGO LICENSE>******************************
-Copyright (c) 2017-2020, the Ginkgo authors
+Copyright (c) 2017-2021, the Ginkgo authors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,13 +30,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************<GINKGO LICENSE>*******************************/
 
-#include "benchmark_wrappers.hpp"
+#include <Kokkos_Core.hpp>
+#include <benchmark_wrappers.hpp>
 
 
 #include <ginkgo/core/base/executor.hpp>
-
-
-#include <Kokkos_Core.hpp>
 // separator to avoid clang-format reordering the includes :)
 #include <KokkosSparse_spgemm.hpp>
 

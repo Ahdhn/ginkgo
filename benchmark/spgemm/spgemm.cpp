@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <numeric>
 #include <random>
+#include <third_party/benchmark_wrappers.hpp>
 #include <typeinfo>
 #include <unordered_set>
 
@@ -52,7 +53,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "benchmark/utils/loggers.hpp"
 #include "benchmark/utils/spmv_common.hpp"
 #include "core/test/utils/matrix_generator.hpp"
-#include "third_party/benchmark_wrappers.hpp"
 
 using etype = double;
 #ifdef GKO_SPGEMM_LONG

@@ -1,5 +1,5 @@
 /*******************************<GINKGO LICENSE>******************************
-Copyright (c) 2017-2020, the Ginkgo authors
+Copyright (c) 2017-2021, the Ginkgo authors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,14 +30,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************<GINKGO LICENSE>*******************************/
 
-#include "benchmark_wrappers.hpp"
+// force-top: on
+#include <benchmark_wrappers.hpp>
+// force-top: off
+
+
+#include <helper_cuda.h>
+#include <HashSpGEMM_volta.hpp>
 
 
 #include <cuda.h>
-#include <helper_cuda.h>
-
-
-#include <HashSpGEMM_volta.hpp>
 
 
 #include "core/matrix/csr_builder.hpp"
