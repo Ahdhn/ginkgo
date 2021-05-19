@@ -57,6 +57,8 @@ template <typename ValueType,
           std::enable_if_t<is_complex_s<ValueType>::value> * = nullptr>
 void atomic_add(ValueType &out, ValueType val)
 {
+    // The C++ standard explicitly allows casting complex<double>* to double*
+    // [complex.numbers.general]
     auto values = reinterpret_cast<gko::remove_complex<ValueType> *>(&out);
 #pragma omp atomic
     values[0] += real(val);
