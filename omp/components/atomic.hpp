@@ -46,7 +46,7 @@ namespace omp {
 
 
 template <typename ValueType,
-          std::enable_if_t<!is_complex<ValueType>()> * = nullptr>
+          std::enable_if_t<!is_complex_s<ValueType>::value> * = nullptr>
 void atomic_add(ValueType &out, ValueType val)
 {
 #pragma omp atomic
@@ -54,7 +54,7 @@ void atomic_add(ValueType &out, ValueType val)
 }
 
 template <typename ValueType,
-          std::enable_if_t<is_complex<ValueType>()> * = nullptr>
+          std::enable_if_t<is_complex_s<ValueType>::value> * = nullptr>
 void atomic_add(ValueType &out, ValueType val)
 {
     auto values = reinterpret_cast<gko::remove_complex<ValueType> *>(&out);
