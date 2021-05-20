@@ -46,6 +46,11 @@ template <typename ValueType>
 void stencil_kernel(std::size_t size, const ValueType *coefs,
                     const ValueType *b, ValueType *x);
 
+template <typename T>
+inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y, const T dim_z)
+{    
+    return k * dim_y * dim_z + j * dim_y + i;
+}
 
 // A stencil matrix class representing the 3pt stencil linear operator.
 // We include the gko::EnableLinOp mixin which implements the entire LinOp
@@ -234,44 +239,22 @@ int main(int argc, char *argv[])
 {
     // Some shortcuts
     using ValueType = double;
+    using BoundaryType = float;//TODO this should be int8_t but this gives compile errors 
     using RealValueType = gko::remove_complex<ValueType>;
     using IndexType = int;
 
     using vec = gko::matrix::Dense<ValueType>;
+    using bdvec = gko::matrix::Dense<BoundaryType>;
     using mtx = gko::matrix::Csr<ValueType, IndexType>;
     using cg = gko::solver::Cg<ValueType>;
 
-    // Figure out where to run the code
-    if (argc == 2 && (std::string(argv[1]) == "--help")) {
-        std::cerr << "Usage: " << argv[0] << " [executor]" << std::endl;
-        std::exit(-1);
-    }
+    uint32_t dimx = 32;
+    uint32_t dimy = 32;
+    uint32_t dimz = 32;
+    const unsigned int discretization_points = dimx*dimy*dimz;
 
-    const auto executor_string = argc >= 2 ? argv[1] : "reference";
-    const unsigned int discretization_points =
-        argc >= 3 ? std::atoi(argv[2]) : 100u;
-    std::map<std::string, std::function<std::shared_ptr<gko::Executor>()>>
-        exec_map{
-            {"omp", [] { return gko::OmpExecutor::create(); }},
-            {"cuda",
-             [] {
-                 return gko::CudaExecutor::create(0, gko::OmpExecutor::create(),
-                                                  true);
-             }},
-            {"hip",
-             [] {
-                 return gko::HipExecutor::create(0, gko::OmpExecutor::create(),
-                                                 true);
-             }},
-            {"dpcpp",
-             [] {
-                 return gko::DpcppExecutor::create(0,
-                                                   gko::OmpExecutor::create());
-             }},
-            {"reference", [] { return gko::ReferenceExecutor::create(); }}};
-
-    // executor where Ginkgo will perform the computation
-    const auto exec = exec_map.at(executor_string)();  // throws if not valid
+    // executor where Ginkgo will perform the computation    
+    const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
     // executor used by the application
     const auto app_exec = exec->get_master();
 
@@ -282,32 +265,48 @@ int main(int argc, char *argv[])
     auto u1 = correct_u(1);
 
     // initialize vectors
-    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
+    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));        
     generate_rhs(f, u0, u1, lend(rhs));
+
     auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
-    for (int i = 0; i < u->get_size()[0]; ++i) {
-        u->get_values()[i] = 0.0;
+    ValueType bdZmin = -20.0;
+    ValueType bdZMax = 20.0;
+    for(uint32_t k=0;k<dimz;++k){
+        for(uint32_t j=0;j<dimy;++j){
+            for(uint32_t i=0;i<dimx;++i){
+                if(k==0){
+                    u->get_values()[pitch(i,j,k,dimx, dimy, dimz)] = bdZmin;
+                }else if (k == dimz-1){
+                    u->get_values()[pitch(i,j,k,dimx, dimy, dimz)] = bdZMax;
+                }else{
+                    u->get_values()[pitch(i,j,k,dimx, dimy, dimz)] = 0.0;
+                }
+            }       
+        }
+    }
+    auto bd = bdvec::create(app_exec, gko::dim<2>(discretization_points, 1));
+    for(uint32_t k=0;k<dimz;++k){
+        for(uint32_t j=0;j<dimy;++j){
+            for(uint32_t i=0;i<dimx;++i){
+                if(k==0 || k == dimz-1){
+                    bd->get_values()[pitch(i,j,k,dimx, dimy, dimz)] = 0;
+                }else{
+                    bd->get_values()[pitch(i,j,k,dimx, dimy, dimz)] = 1;
+                }
+            }       
+        }
     }
 
     const RealValueType reduction_factor{1e-7};
     // Generate solver and solve the system
-    cg::build()
-        .with_criteria(gko::stop::Iteration::build()
-                           .with_max_iters(discretization_points)
-                           .on(exec),
-                       gko::stop::ResidualNorm<ValueType>::build()
-                           .with_reduction_factor(reduction_factor)
-                           .on(exec))
-        .on(exec)
-        // notice how our custom StencilMatrix can be used in the same way as
-        // any built-in type
-        ->generate(StencilMatrix<ValueType>::create(exec, discretization_points,
-                                                    -1, 2, -1))
+    cg::build().with_criteria(
+        gko::stop::Iteration::build().with_max_iters(discretization_points).on(exec),
+        gko::stop::ResidualNorm<ValueType>::build().with_reduction_factor(reduction_factor).on(exec)).on(exec)
+        ->generate(StencilMatrix<ValueType>::create(exec, discretization_points, -1, 2, -1))
         ->apply(lend(rhs), lend(u));
 
     std::cout << "\nSolve complete."
               << "\nThe average relative error is "
-              << calculate_error(discretization_points, lend(u), correct_u) /
-                     discretization_points
+              << calculate_error(discretization_points, lend(u), correct_u) / discretization_points
               << std::endl;
 }
