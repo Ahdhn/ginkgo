@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // CUDA executor. Unfortunately, NVCC has serious problems interpreting some
 // parts of Ginkgo's code, so the kernel has to be compiled separately.
 template <typename ValueType, typename BoundaryType>
-void stencil_kernel(std::size_t size, const BoundaryType *bd, const ValueType *b, ValueType *x);
+void stencil_kernel(std::size_t size, const BoundaryType *bd, const ValueType *b, ValueType *x, std::size_t dimx, std::size_t dimy, std::size_t dimz);
 
 template <typename T>
 inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y, const T dim_z)
@@ -76,12 +76,12 @@ public:
                   gko::size_type dimx = 0, 
                   gko::size_type dimy = 0,
                   gko::size_type dimz = 0)
-        : gko::EnableLinOp<StencilMatrix>(exec, gko::dim<2>{dimx*dimy*dimz}), bd(bd), dimx(dimx), dimy(dimy), dimz(dimz)
+        : gko::EnableLinOp<StencilMatrix>(exec, gko::dim<2>{dimx*dimy*dimz}), m_bd(bd), dimx(dimx), dimy(dimy), dimz(dimz)
     {
     }
 
 protected:        
-    const vec_bd* bd;
+    const vec_bd* m_bd;
     gko::size_type dimx;
     gko::size_type dimy;
     gko::size_type dimz;
@@ -100,14 +100,14 @@ protected:
         // gko::as will throw an exception if its argument is not Dense.
         auto dense_b = gko::as<vec>(b);
         auto dense_x = gko::as<vec>(x);
-        auto dense_bd = gko::as<vec_bd>(bd);
+        auto dense_bd = gko::as<vec_bd>(m_bd);
 
         // we need separate implementations depending on the executor, so we
         // create an operation which maps the call to the correct implementation
         struct stencil_operation : gko::Operation {
             stencil_operation(const vec_bd *bd, const vec *b, vec *x, 
                               gko::size_type dimx = 0, gko::size_type dimy = 0, gko::size_type dimz = 0 ) :
-                              bd(bd), b(b), x(x), dimx(dimx), dimy(dimy), dimz(dimz)
+                              m_m_bd(bd), b(b), x(x), dimx(dimx), dimy(dimy), dimz(dimz)
             {}
 
             // OpenMP implementation
@@ -115,15 +115,18 @@ protected:
             {
                 auto b_values = b->get_const_values();
                 auto x_values = x->get_values();                
-                auto bd_values = bd->get_const_values();    
+                auto bd_values = m_m_bd->get_const_values();    
                 
-                printf("\n ***** dim= %u, %u, %u \n", dimx, dimy, dimz);
+                printf("\n ***** dim= %u, %u, %u", dimx, dimy, dimz);
 
 //#pragma omp parallel for
                 for(gko::size_type k = 0; k < dimz; ++k){                
                     for(gko::size_type j = 0; j < dimy; ++j){
                         for(gko::size_type i = 0; i < dimx; ++i){
-                            printf("\n i= %u, j= %u, k= %u x= %f, b= %f, bd= %f", i, j, k, x_values[i], b_values[i], bd_values[i]);
+                            printf("\n i= %u, j= %u, k= %u x= %f, b= %f, bd= %f", i, j, k, 
+                                x_values[pitch(i,j,k,dimx, dimy, dimz)], 
+                                b_values[pitch(i,j,k,dimx, dimy, dimz)], 
+                                bd_values[pitch(i,j,k,dimx, dimy, dimz)]);
                         }
                     }
                 }                
@@ -132,14 +135,14 @@ protected:
             // CUDA implementation
             void run(std::shared_ptr<const gko::CudaExecutor>) const override
             {
-                stencil_kernel<ValueType, ValueType>(x->get_size()[0], bd->get_const_values(), b->get_const_values(), x->get_values());
+                printf("\n ******* Kernel\n");
+                stencil_kernel<ValueType, ValueType>(x->get_size()[0], 
+                                                     m_m_bd->get_const_values(), 
+                                                     b->get_const_values(), 
+                                                     x->get_values(), dimx, dimy, dimz);
             }
 
-            // We do not provide an implementation for reference executor.
-            // If not provided, Ginkgo will use the implementation for the
-            // OpenMP executor when calling it in the reference executor.
-
-            const vec_bd *bd;
+            const vec_bd *m_m_bd;
             const vec *b;            
             vec *x;
 
@@ -157,7 +160,7 @@ protected:
     // for simplicity, we will implement it exactly like that in this example.
     void apply_impl(const gko::LinOp *alpha, const gko::LinOp *b,
                     const gko::LinOp *beta, gko::LinOp *x) const override
-    {
+    {        
         auto dense_b = gko::as<vec>(b);
         auto dense_x = gko::as<vec>(x);
         auto tmp_x = dense_x->clone();
@@ -170,51 +173,30 @@ private:
 };
 
 
-// Generates the RHS vector given `f` and the boundary conditions.
-template <typename Closure, typename ValueType>
-void generate_rhs(Closure f, ValueType u0, ValueType u1,
-                  gko::matrix::Dense<ValueType> *rhs)
-{
-    const auto discretization_points = rhs->get_size()[0];
-    auto values = rhs->get_values();
-    const ValueType h = 1.0 / (discretization_points + 1);
-    for (int i = 0; i < discretization_points; ++i) {
-        const ValueType xi = ValueType(i + 1) * h;
-        values[i] = -f(xi) * h * h;
-    }
-    values[0] += u0;
-    values[discretization_points - 1] += u1;
-}
-
-
 // Prints the solution `u`.
 template <typename ValueType>
-void print_solution(ValueType u0, ValueType u1,
-                    const gko::matrix::Dense<ValueType> *u)
+void print_solution(const gko::matrix::Dense<ValueType> *u)
 {
-    std::cout << u0 << '\n';
     for (int i = 0; i < u->get_size()[0]; ++i) {
         std::cout << u->get_const_values()[i] << '\n';
-    }
-    std::cout << u1 << std::endl;
+    }    
 }
 
 
 // Computes the 1-norm of the error given the computed `u` and the correct
 // solution function `correct_u`.
-template <typename Closure, typename ValueType>
+template </*typename Closure,*/ typename ValueType>
 double calculate_error(int discretization_points,
-                       const gko::matrix::Dense<ValueType> *u,
-                       Closure correct_u)
+                       const gko::matrix::Dense<ValueType> *u)
 {
     const auto h = 1.0 / (discretization_points + 1);
     auto error = 0.0;
-    for (int i = 0; i < discretization_points; ++i) {
+    /*for (int i = 0; i < discretization_points; ++i) {
         using std::abs;
         const auto xi = (i + 1) * h;
         error +=
             abs(u->get_const_values()[i] - correct_u(xi)) / abs(correct_u(xi));
-    }
+    }*/
     return error;
 }
 
@@ -238,20 +220,14 @@ int main(int argc, char *argv[])
     gko::size_type discretization_points = dimx*dimy*dimz;
 
     // executor where Ginkgo will perform the computation    
-    //const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
-    const auto exec = gko::OmpExecutor::create();
+    const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
+    //const auto exec = gko::OmpExecutor::create();
+
     // executor used by the application
     const auto app_exec = exec->get_master();
 
-    // problem:
-    auto correct_u = [](ValueType x) { return x * x * x; };
-    auto f = [](ValueType x) { return ValueType{6} * x; };
-    auto u0 = correct_u(0);
-    auto u1 = correct_u(1);
-
     // initialize vectors
-    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));        
-    //generate_rhs(f, u0, u1, lend(rhs));
+    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));            
     for(uint32_t k=0;k<dimz;++k){
         for(uint32_t j=0;j<dimy;++j){
             for(uint32_t i=0;i<dimx;++i){
@@ -259,7 +235,7 @@ int main(int argc, char *argv[])
             }       
         }
     }
-
+    
     auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
     ValueType bdZmin = -20.0;
     ValueType bdZMax = 20.0;
@@ -276,6 +252,7 @@ int main(int argc, char *argv[])
             }       
         }
     }
+    
     auto bd = bdvec::create(app_exec, gko::dim<2>(discretization_points, 1));
     for(uint32_t k=0;k<dimz;++k){
         for(uint32_t j=0;j<dimy;++j){
@@ -288,10 +265,11 @@ int main(int argc, char *argv[])
             }       
         }
     }
+    
 
     const RealValueType reduction_factor{1e-7};
     // Generate solver and solve the system
-    gko::size_type max_num_iter = 1;
+    gko::size_type max_num_iter = 2;
     cg::build().with_criteria(gko::stop::Iteration::build().with_max_iters(max_num_iter).on(exec),
                               gko::stop::ResidualNorm<ValueType>::build().with_reduction_factor(reduction_factor).on(exec)).on(exec)        
         ->generate(StencilMatrix<ValueType, BoundaryType>::create(exec, lend(bd), dimx, dimy, dimz))
@@ -299,6 +277,6 @@ int main(int argc, char *argv[])
 
     std::cout << "\nSolve complete."
               << "\nThe average relative error is "
-              << calculate_error(discretization_points, lend(u), correct_u) / discretization_points
+              << calculate_error(discretization_points, lend(u)) / discretization_points
               << std::endl;
 }
