@@ -2,7 +2,7 @@ set(GINKGO_HAS_OMP OFF)
 set(GINKGO_HAS_CUDA OFF)
 set(GINKGO_HAS_DPCPP OFF)
 set(GINKGO_HAS_HIP OFF)
-find_package(OpenMP 3.0)
+find_package(OpenMP 2.0)
 include(CheckLanguage)
 check_language(CUDA)
 try_compile(GKO_CAN_COMPILE_DPCPP ${PROJECT_BINARY_DIR}/dpcpp

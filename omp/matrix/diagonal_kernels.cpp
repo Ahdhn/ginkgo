@@ -58,7 +58,7 @@ void apply_to_dense(std::shared_ptr<const OmpExecutor> exec,
                     matrix::Dense<ValueType> *c)
 {
     const auto diag_values = a->get_const_values();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; row++) {
         const auto scal = diag_values[row];
         for (size_type col = 0; col < b->get_size()[1]; col++) {
@@ -77,7 +77,7 @@ void right_apply_to_dense(std::shared_ptr<const OmpExecutor> exec,
                           matrix::Dense<ValueType> *c)
 {
     const auto diag_values = a->get_const_values();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < b->get_size()[0]; row++) {
         for (size_type col = 0; col < a->get_size()[1]; col++) {
             c->at(row, col) = b->at(row, col) * diag_values[col];
@@ -100,7 +100,7 @@ void apply_to_csr(std::shared_ptr<const OmpExecutor> exec,
     auto csr_values = c->get_values();
     const auto csr_row_ptrs = c->get_const_row_ptrs();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < c->get_size()[0]; row++) {
         const auto scal = diag_values[row];
         for (size_type idx = csr_row_ptrs[row]; idx < csr_row_ptrs[row + 1];
@@ -126,7 +126,7 @@ void right_apply_to_csr(std::shared_ptr<const OmpExecutor> exec,
     const auto csr_row_ptrs = c->get_const_row_ptrs();
     const auto csr_col_idxs = c->get_const_col_idxs();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < c->get_size()[0]; row++) {
         for (size_type idx = csr_row_ptrs[row]; idx < csr_row_ptrs[row + 1];
              idx++) {
@@ -150,7 +150,7 @@ void convert_to_csr(std::shared_ptr<const OmpExecutor> exec,
     auto csr_values = result->get_values();
     const auto diag_values = source->get_const_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < size; i++) {
         row_ptrs[i] = i;
         col_idxs[i] = i;
@@ -172,7 +172,7 @@ void conj_transpose(std::shared_ptr<const OmpExecutor> exec,
     const auto orig_values = orig->get_const_values();
     auto trans_values = trans->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < size; i++) {
         trans_values[i] = conj(orig_values[i]);
     }

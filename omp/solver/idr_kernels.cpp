@@ -67,7 +67,7 @@ void solve_lower_triangular(const size_type nrhs,
                             matrix::Dense<ValueType> *c,
                             const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < f->get_size()[1]; i++) {
         if (stop_status->get_const_data()[i].has_stopped()) {
             continue;
@@ -92,7 +92,7 @@ void update_g_and_u(const size_type nrhs, const size_type k,
                     matrix::Dense<ValueType> *u,
                     const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < nrhs; i++) {
         if (stop_status->get_const_data()[i].has_stopped()) {
             continue;
@@ -143,15 +143,15 @@ void initialize(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
                 matrix::Dense<ValueType> *subspace_vectors, bool deterministic,
                 Array<stopping_status> *stop_status)
 {
-#pragma omp declare reduction(add:ValueType : omp_out = omp_out + omp_in)
+//#pragma omp declare reduction(add:ValueType : omp_out = omp_out + omp_in)
 
     // Initialize M
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < nrhs; i++) {
         stop_status->get_data()[i].reset();
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < m->get_size()[0]; row++) {
         for (size_type col = 0; col < m->get_size()[1]; col++) {
             m->at(row, col) =
@@ -173,12 +173,12 @@ void initialize(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
 
         for (size_type i = 0; i < row; i++) {
             auto dot = zero<ValueType>();
-#pragma omp parallel for reduction(add : dot)
+//#pragma omp parallel for reduction(add : dot)
             for (size_type j = 0; j < num_cols; j++) {
                 dot += subspace_vectors->at(row, j) *
                        conj(subspace_vectors->at(i, j));
             }
-#pragma omp parallel for
+//#pragma omp parallel for
             for (size_type j = 0; j < num_cols; j++) {
                 subspace_vectors->at(row, j) -=
                     dot * subspace_vectors->at(i, j);
@@ -186,14 +186,14 @@ void initialize(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
         }
 
         auto norm = zero<remove_complex<ValueType>>();
-#pragma omp parallel for reduction(+ : norm)
+//#pragma omp parallel for reduction(+ : norm)
         for (size_type j = 0; j < num_cols; j++) {
             norm += squared_norm(subspace_vectors->at(row, j));
         }
 
         norm = sqrt(norm);
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type j = 0; j < num_cols; j++) {
             subspace_vectors->at(row, j) /= norm;
         }
@@ -223,7 +223,7 @@ void step_1(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
         }
 
         // v = residual - c_k * g_k - ... - c_s * g_s
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type row = 0; row < v->get_size()[0]; row++) {
             auto temp = residual->at(row, i);
             for (size_type j = k; j < m->get_size()[0]; j++) {
@@ -249,7 +249,7 @@ void step_2(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
             continue;
         }
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type row = 0; row < u->get_size()[0]; row++) {
             auto temp = omega->at(0, i) * preconditioned_vector->at(row, i);
             for (size_type j = k; j < c->get_size()[0]; j++) {
@@ -279,7 +279,7 @@ void step_3(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
             continue;
         }
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type j = k; j < m->get_size()[0]; j++) {
             auto temp = zero<ValueType>();
             for (size_type ind = 0; ind < p->get_size()[1]; ind++) {
@@ -290,7 +290,7 @@ void step_3(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
 
         auto beta = f->at(k, i) / m->at(k, k * nrhs + i);
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type row = 0; row < g->get_size()[0]; row++) {
             residual->at(row, i) -= beta * g->at(row, k * nrhs + i);
             x->at(row, i) += beta * u->at(row, k * nrhs + i);
@@ -298,7 +298,7 @@ void step_3(std::shared_ptr<const OmpExecutor> exec, const size_type nrhs,
 
         if (k + 1 < f->get_size()[0]) {
             f->at(k, i) = zero<ValueType>();
-#pragma omp parallel for
+//#pragma omp parallel for
             for (size_type j = k + 1; j < f->get_size()[0]; j++) {
                 f->at(j, i) -= beta * m->at(j, k * nrhs + i);
             }
@@ -316,7 +316,7 @@ void compute_omega(
     const matrix::Dense<remove_complex<ValueType>> *residual_norm,
     matrix::Dense<ValueType> *omega, const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < nrhs; i++) {
         if (stop_status->get_const_data()[i].has_stopped()) {
             continue;

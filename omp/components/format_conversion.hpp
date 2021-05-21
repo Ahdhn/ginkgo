@@ -58,8 +58,8 @@ inline void convert_unsorted_idxs_to_ptrs(const IndexType *idxs,
                                           size_type num_nonzeros,
                                           IndexType *ptrs, size_type length)
 {
-#pragma omp parallel for schedule(static, \
-                                  ceildiv(length, omp_get_max_threads()))
+//#pragma omp parallel for schedule(static, \
+//                                  ceildiv(length, omp_get_max_threads()))
     for (size_type i = 0; i < length; i++) {
         ptrs[i] = 0;
     }
@@ -89,8 +89,8 @@ inline void convert_sorted_idxs_to_ptrs(const IndexType *idxs,
     ptrs[0] = 0;
     ptrs[length - 1] = num_nonzeros;
 
-#pragma omp parallel for schedule( \
-    static, ceildiv(num_nonzeros, omp_get_max_threads()))
+//#pragma omp parallel for schedule( \
+//    static, ceildiv(num_nonzeros, omp_get_max_threads()))
     for (size_type i = 0; i < num_nonzeros - 1; i++) {
         for (size_type j = idxs[i] + 1; j <= idxs[i + 1]; j++) {
             ptrs[j] = i + 1;
@@ -103,7 +103,7 @@ template <typename IndexType>
 inline void convert_ptrs_to_idxs(const IndexType *ptrs, size_type num_rows,
                                  IndexType *idxs)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         for (size_type i = ptrs[row]; i < static_cast<size_type>(ptrs[row + 1]);
              ++i) {

@@ -83,7 +83,7 @@ set(GINKGO_HIP_CLANG_COMPILER_FLAGS "" CACHE STRING
 set(GINKGO_HIP_AMDGPU "" CACHE STRING
     "The amdgpu_target(s) variable passed to hipcc. The default is none (auto).")
 option(GINKGO_JACOBI_FULL_OPTIMIZATIONS "Use all the optimizations for the CUDA Jacobi algorithm" OFF)
-option(BUILD_SHARED_LIBS "Build shared (.so, .dylib, .dll) libraries" ON)
+option(BUILD_SHARED_LIBS "Build shared (.so, .dylib, .dll) libraries" OFF)
 if(MSVC OR WIN32 OR CYGWIN OR APPLE)
     option(GINKGO_BUILD_HWLOC "Build Ginkgo with HWLOC. Default is OFF. Ginkgo does not support HWLOC on Windows/MacOS" OFF)
 else()

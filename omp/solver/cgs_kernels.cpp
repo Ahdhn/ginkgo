@@ -66,7 +66,7 @@ void initialize(std::shared_ptr<const OmpExecutor> exec,
                 matrix::Dense<ValueType> *rho,
                 Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type j = 0; j < b->get_size()[1]; ++j) {
         rho->at(j) = zero<ValueType>();
         prev_rho->at(j) = one<ValueType>();
@@ -75,7 +75,7 @@ void initialize(std::shared_ptr<const OmpExecutor> exec,
         gamma->at(j) = one<ValueType>();
         stop_status->get_data()[j].reset();
     }
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < b->get_size()[0]; ++i) {
         for (size_type j = 0; j < b->get_size()[1]; ++j) {
             r->at(i, j) = b->at(i, j);
@@ -97,7 +97,7 @@ void step_1(std::shared_ptr<const OmpExecutor> exec,
             const matrix::Dense<ValueType> *rho_prev,
             const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type j = 0; j < p->get_size()[1]; ++j) {
         if (stop_status->get_const_data()[j].has_stopped()) {
             continue;
@@ -106,7 +106,7 @@ void step_1(std::shared_ptr<const OmpExecutor> exec,
             beta->at(j) = rho->at(j) / rho_prev->at(j);
         }
     }
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < p->get_size()[0]; ++i) {
         for (size_type j = 0; j < p->get_size()[1]; ++j) {
             if (stop_status->get_const_data()[j].has_stopped()) {
@@ -132,7 +132,7 @@ void step_2(std::shared_ptr<const OmpExecutor> exec,
             const matrix::Dense<ValueType> *gamma,
             const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type j = 0; j < u->get_size()[1]; ++j) {
         if (stop_status->get_const_data()[j].has_stopped()) {
             continue;
@@ -141,7 +141,7 @@ void step_2(std::shared_ptr<const OmpExecutor> exec,
             alpha->at(j) = rho->at(j) / gamma->at(j);
         }
     }
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < u->get_size()[0]; ++i) {
         for (size_type j = 0; j < u->get_size()[1]; ++j) {
             if (stop_status->get_const_data()[j].has_stopped()) {
@@ -162,7 +162,7 @@ void step_3(std::shared_ptr<const DefaultExecutor> exec,
             matrix::Dense<ValueType> *x, const matrix::Dense<ValueType> *alpha,
             const Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < x->get_size()[0]; ++i) {
         for (size_type j = 0; j < x->get_size()[1]; ++j) {
             if (stop_status->get_const_data()[j].has_stopped()) {

@@ -60,7 +60,7 @@ void init_factor(std::shared_ptr<const DefaultExecutor> exec,
     auto l_row_ptrs = l->get_const_row_ptrs();
     auto l_vals = l->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto l_nz = l_row_ptrs[row + 1] - 1;
         auto diag = sqrt(l_vals[l_nz]);
@@ -89,7 +89,7 @@ void compute_factor(std::shared_ptr<const DefaultExecutor> exec,
     auto a_vals = a_lower->get_const_values();
 
     for (size_type i = 0; i < iterations; ++i) {
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type row = 0; row < num_rows; ++row) {
             for (size_type l_nz = l_row_ptrs[row]; l_nz < l_row_ptrs[row + 1];
                  ++l_nz) {

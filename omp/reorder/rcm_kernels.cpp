@@ -168,7 +168,7 @@ struct UbfsLinearQueue {
 
         if (n > 0) {
 // Interacts with other parts of the program.
-#pragma omp atomic update
+//#pragma omp atomic update
             ++(*threads_working);
 
             const auto old_head = head;
@@ -180,7 +180,7 @@ struct UbfsLinearQueue {
             // is guaranteed by the outer lock.
             while (true) {
                 int val_threads_working;
-#pragma omp atomic read
+//#pragma omp atomic read
                 val_threads_working = *threads_working;
 
                 if (val_threads_working == 0) {
@@ -194,7 +194,7 @@ struct UbfsLinearQueue {
             // Recalculate the chunk size, now that all threads are finished.
             const auto n = chunk_size();
             if (n > 0) {
-#pragma omp atomic update
+//#pragma omp atomic update
                 ++(*threads_working);
 
                 IndexType old_head = head;
@@ -263,7 +263,7 @@ inline void reduce_neighbours_levels(const IndexType num_vertices,
                                      const IndexType node)
 {
     IndexType level;
-#pragma omp atomic read
+//#pragma omp atomic read
     level = levels[node];
 
     const auto new_neighbour_level = level + 1;
@@ -283,7 +283,7 @@ inline void reduce_neighbours_levels(const IndexType num_vertices,
 
             IndexType old_neighbour_level;
             do {
-#pragma omp atomic read
+//#pragma omp atomic read
                 old_neighbour_level = levels[neighbour];
 
                 const auto is_new_smaller =
@@ -365,7 +365,7 @@ void ubfs(std::shared_ptr<const OmpExecutor> exec, const IndexType num_vertices,
                 // Insert back to global work queue, done with this chunk.
                 q.enqueue_chunk(&local_to_insert[0], local_to_insert_size);
 
-#pragma omp atomic update
+//#pragma omp atomic update
                 --threads_working;
 
                 local_to_insert_size = 0;
@@ -679,11 +679,11 @@ void write_permutation(std::shared_ptr<const OmpExecutor> exec,
                  ++read_offset) {
                 // Wait until a value is written at that index.
                 IndexType written;
-#pragma omp atomic read
+//#pragma omp atomic read
                 written = perm[base_offset + read_offset];
                 while (written == perm_untouched) {
                     GKO_MM_PAUSE();
-#pragma omp atomic read
+//#pragma omp atomic read
                     written = perm[base_offset + read_offset];
                 }
 
@@ -699,7 +699,7 @@ void write_permutation(std::shared_ptr<const OmpExecutor> exec,
                     // while written. This is only necessary to guarantee the
                     // abscence of reads-while-writes.
                     IndexType neighbour_level;
-#pragma omp atomic read
+//#pragma omp atomic read
                     neighbour_level = levels[neighbour];
 
                     // level_processed is not a valid value for a node,
@@ -707,7 +707,7 @@ void write_permutation(std::shared_ptr<const OmpExecutor> exec,
                     if (neighbour_level == write_level) {
 // Protect against writing the same node as neighbour of different nodes in the
 // previous level by the same thread.
-#pragma omp atomic write
+//#pragma omp atomic write
                         levels[neighbour] = level_processed;
                         valid_neighbours.push_back(neighbour);
                     }
@@ -726,7 +726,7 @@ void write_permutation(std::shared_ptr<const OmpExecutor> exec,
 
                 // Memcpy would be nice, but we need element-wise atomicity.
                 for (IndexType i = 0; i < size; ++i) {
-#pragma omp atomic write
+//#pragma omp atomic write
                     perm[base_write_offset + i] = valid_neighbours[i];
                 }
 

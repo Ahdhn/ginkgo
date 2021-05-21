@@ -50,7 +50,7 @@ namespace ir {
 void initialize(std::shared_ptr<const OmpExecutor> exec,
                 Array<stopping_status> *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type j = 0; j < stop_status->get_num_elems(); ++j) {
         stop_status->get_data()[j].reset();
     }

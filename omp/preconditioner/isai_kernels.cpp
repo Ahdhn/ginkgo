@@ -124,7 +124,7 @@ void generic_generate(std::shared_ptr<const DefaultExecutor> exec,
         auto dense_system_ptr = dense_system_array.get_data() +
                                 thread_num * row_size_limit * row_size_limit;
 
-#pragma omp for
+//#pragma omp for
         for (size_type row = 0; row < num_rows; ++row) {
             const auto i_begin = i_row_ptrs[row];
             const auto i_size = i_row_ptrs[row + 1] - i_begin;
@@ -370,7 +370,7 @@ void generate_excess_system(std::shared_ptr<const DefaultExecutor>,
     auto e_vals = excess_system->get_values();
     auto e_rhs = excess_rhs->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = e_start; row < e_end; ++row) {
         const auto i_begin = i_row_ptrs[row];
         const auto i_size = i_row_ptrs[row + 1] - i_begin;
@@ -420,7 +420,7 @@ void scale_excess_solution(std::shared_ptr<const DefaultExecutor>,
 {
     auto excess_values = excess_solution->get_values();
     auto offset = excess_block_ptrs[e_start];
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = e_start; row < e_end; ++row) {
         IndexType block_start = excess_block_ptrs[row] - offset;
         IndexType block_end = excess_block_ptrs[row + 1] - offset;
@@ -447,7 +447,7 @@ void scatter_excess_solution(std::shared_ptr<const DefaultExecutor>,
     auto values = inverse->get_values();
     auto row_ptrs = inverse->get_const_row_ptrs();
     auto offset = excess_block_ptrs[e_start];
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = e_start; row < e_end; ++row) {
         const auto excess_begin =
             excess_values + excess_block_ptrs[row] - offset;

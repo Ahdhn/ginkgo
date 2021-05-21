@@ -379,7 +379,7 @@ void generate(std::shared_ptr<const OmpExecutor> exec,
     Array<IndexType> perm_storage{
         exec, static_cast<size_type>(parallel_blocks * max_block_size)};
     Array<uint32> pr_descriptor_storage(exec, parallel_blocks);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type g = 0; g < num_blocks; g += group_size) {
         const auto thread_id = omp_get_thread_num();
         const auto thread_offset = thread_id * (group_size + 1);
@@ -525,7 +525,7 @@ void apply(std::shared_ptr<const OmpExecutor> exec, size_type num_blocks,
 {
     const auto ptrs = block_pointers.get_const_data();
     const auto prec = block_precisions.get_const_data();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
             blocks.get_const_data() + storage_scheme.get_group_offset(i);
@@ -559,7 +559,7 @@ void simple_apply(
 {
     const auto ptrs = block_pointers.get_const_data();
     const auto prec = block_precisions.get_const_data();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
             blocks.get_const_data() + storage_scheme.get_group_offset(i);
@@ -595,7 +595,7 @@ void transpose_jacobi(
     const auto prec = block_precisions.get_const_data();
     const size_type matrix_size = ptrs[num_blocks];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group_ofs = storage_scheme.get_group_offset(i);
         const auto block_ofs = storage_scheme.get_block_offset(i);
@@ -632,7 +632,7 @@ void conj_transpose_jacobi(
     const auto prec = block_precisions.get_const_data();
     const size_type matrix_size = ptrs[num_blocks];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group_ofs = storage_scheme.get_group_offset(i);
         const auto block_ofs = storage_scheme.get_block_offset(i);
@@ -668,13 +668,13 @@ void convert_to_dense(
     const auto ptrs = block_pointers.get_const_data();
     const auto prec = block_precisions.get_const_data();
     const size_type matrix_size = ptrs[num_blocks];
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < matrix_size; ++i) {
         for (size_type j = 0; j < matrix_size; ++j) {
             result_values[i * result_stride + j] = zero<ValueType>();
         }
     }
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
             blocks.get_const_data() + storage_scheme.get_group_offset(i);

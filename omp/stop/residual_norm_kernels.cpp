@@ -63,7 +63,7 @@ void residual_norm(std::shared_ptr<const OmpExecutor> exec,
     static_assert(is_complex_s<ValueType>::value == false,
                   "ValueType must not be complex in this function!");
     bool local_one_changed = false;
-#pragma omp parallel for reduction(|| : local_one_changed)
+//#pragma omp parallel for reduction(|| : local_one_changed)
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (tau->at(i) < rel_residual_goal * orig_tau->at(i)) {
             stop_status->get_data()[i].converge(stoppingId, setFinalized);
@@ -74,7 +74,7 @@ void residual_norm(std::shared_ptr<const OmpExecutor> exec,
     // No early stopping here because one cannot use break with parallel for
     // But it's parallel so does it matter?
     bool local_all_converged = true;
-#pragma omp parallel for reduction(&& : local_all_converged)
+//#pragma omp parallel for reduction(&& : local_all_converged)
     for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
         if (!stop_status->get_const_data()[i].has_stopped()) {
             local_all_converged = false;
@@ -108,7 +108,7 @@ void implicit_residual_norm(
     Array<bool> *device_storage, bool *all_converged, bool *one_changed)
 {
     bool local_one_changed = false;
-#pragma omp parallel for reduction(|| : local_one_changed)
+//#pragma omp parallel for reduction(|| : local_one_changed)
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (sqrt(abs(tau->at(i))) < rel_residual_goal * orig_tau->at(i)) {
             stop_status->get_data()[i].converge(stoppingId, setFinalized);
@@ -119,7 +119,7 @@ void implicit_residual_norm(
     // No early stopping here because one cannot use break with parallel for
     // But it's parallel so does it matter?
     bool local_all_converged = true;
-#pragma omp parallel for reduction(&& : local_all_converged)
+//#pragma omp parallel for reduction(&& : local_all_converged)
     for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
         if (!stop_status->get_const_data()[i].has_stopped()) {
             local_all_converged = false;

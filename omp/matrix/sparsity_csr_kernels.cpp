@@ -70,7 +70,7 @@ void spmv(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs = a->get_const_col_idxs();
     auto val = a->get_const_value()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; ++row) {
         for (size_type j = 0; j < c->get_size()[1]; ++j) {
             c->at(row, j) = zero<ValueType>();
@@ -103,7 +103,7 @@ void advanced_spmv(std::shared_ptr<const OmpExecutor> exec,
     auto vbeta = beta->at(0, 0);
     auto val = a->get_const_value()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; ++row) {
         for (size_type j = 0; j < c->get_size()[1]; ++j) {
             c->at(row, j) *= vbeta;
@@ -238,7 +238,7 @@ void sort_by_column_index(std::shared_ptr<const OmpExecutor> exec,
     auto row_ptrs = to_sort->get_row_ptrs();
     auto col_idxs = to_sort->get_col_idxs();
     const auto number_rows = to_sort->get_size()[0];
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < number_rows; ++i) {
         auto start_row_idx = row_ptrs[i];
         auto row_nnz = row_ptrs[i + 1] - start_row_idx;
@@ -259,9 +259,9 @@ void is_sorted_by_column_index(
     const auto col_idxs = to_check->get_const_col_idxs();
     const auto size = to_check->get_size();
     bool local_is_sorted = true;
-#pragma omp parallel for shared(local_is_sorted)
+//#pragma omp parallel for shared(local_is_sorted)
     for (size_type i = 0; i < size[0]; ++i) {
-#pragma omp flush(local_is_sorted)
+//#pragma omp flush(local_is_sorted)
         // Skip comparison if any thread detects that it is not sorted
         if (local_is_sorted) {
             for (auto idx = row_ptrs[i] + 1; idx < row_ptrs[i + 1]; ++idx) {

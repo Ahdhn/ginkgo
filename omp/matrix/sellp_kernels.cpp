@@ -60,7 +60,7 @@ void spmv(std::shared_ptr<const OmpExecutor> exec,
     auto slice_sets = a->get_const_slice_sets();
     auto slice_size = a->get_slice_size();
     auto slice_num = ceildiv(a->get_size()[0] + slice_size - 1, slice_size);
-#pragma omp parallel for collapse(2)
+//#pragma omp parallel for collapse(2)
     for (size_type slice = 0; slice < slice_num; slice++) {
         for (size_type row = 0; row < slice_size; row++) {
             size_type global_row = slice * slice_size + row;
@@ -99,7 +99,7 @@ void advanced_spmv(std::shared_ptr<const OmpExecutor> exec,
     auto slice_num = ceildiv(a->get_size()[0] + slice_size - 1, slice_size);
     auto valpha = alpha->at(0, 0);
     auto vbeta = beta->at(0, 0);
-#pragma omp parallel for collapse(2)
+//#pragma omp parallel for collapse(2)
     for (size_type slice = 0; slice < slice_num; slice++) {
         for (size_type row = 0; row < slice_size; row++) {
             size_type global_row = slice * slice_size + row;
@@ -137,7 +137,7 @@ void convert_to_dense(std::shared_ptr<const OmpExecutor> exec,
     auto slice_size = source->get_slice_size();
     auto slice_num =
         ceildiv(source->get_size()[0] + slice_size - 1, slice_size);
-#pragma omp parallel for collapse(2)
+//#pragma omp parallel for collapse(2)
     for (size_type slice = 0; slice < slice_num; slice++) {
         for (size_type row = 0; row < slice_size; row++) {
             size_type global_row = slice * slice_size + row;
@@ -193,7 +193,7 @@ void extract_diagonal(std::shared_ptr<const OmpExecutor> exec,
     const auto orig_col_idxs = orig->get_const_col_idxs();
     auto diag_values = diag->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type slice = 0; slice < slice_num; slice++) {
         for (size_type row = 0; row < slice_size; row++) {
             auto global_row = slice_size * slice + row;

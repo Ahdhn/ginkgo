@@ -57,7 +57,7 @@ __global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
     int j = blah / dimx;
     int i = blah % dimx;
     
-    assert(pitch(i,j,k,dimx, dimy, dimz) == thread_id);
+    //assert(pitch(i,j,k,dimx, dimy, dimz) == thread_id);
 
     //printf("\n i= %d, j= %d, k= %d x= %f, b= %f, bd= %f", i, j, k, 
     //            x[thread_id], b[thread_id], bd[thread_id]);

@@ -73,7 +73,7 @@ void compute_l_u_factors(std::shared_ptr<const OmpExecutor> exec,
     auto vals_u = u_factor->get_values();
     for (size_type iter = 0; iter < iterations; ++iter) {
         // all elements in the incomplete factors are updated in parallel
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type el = 0; el < system_matrix->get_num_stored_elements();
              ++el) {
             const auto row = row_idxs[el];

@@ -43,7 +43,7 @@ template <typename ValueType>
 void fill_array(std::shared_ptr<const DefaultExecutor> exec, ValueType *array,
                 size_type n, ValueType val)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < n; ++i) {
         array[i] = val;
     }
@@ -56,7 +56,7 @@ template <typename ValueType>
 void fill_seq_array(std::shared_ptr<const DefaultExecutor> exec,
                     ValueType *array, size_type n)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < n; ++i) {
         array[i] = i;
     }

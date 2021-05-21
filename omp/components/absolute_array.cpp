@@ -43,7 +43,7 @@ template <typename ValueType>
 void inplace_absolute_array(std::shared_ptr<const DefaultExecutor> exec,
                             ValueType *data, size_type n)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < n; ++i) {
         data[i] = abs(data[i]);
     }
@@ -57,7 +57,7 @@ void outplace_absolute_array(std::shared_ptr<const DefaultExecutor> exec,
                              const ValueType *in, size_type n,
                              remove_complex<ValueType> *out)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < n; ++i) {
         out[i] = abs(in[i]);
     }

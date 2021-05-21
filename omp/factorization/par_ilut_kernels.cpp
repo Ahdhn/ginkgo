@@ -111,7 +111,7 @@ void abstract_filter(std::shared_ptr<const DefaultExecutor> exec,
     // first sweep: count nnz for each row
     auto new_row_ptrs = m_out->get_row_ptrs();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         IndexType count{};
         for (auto nz = row_ptrs[row]; nz < row_ptrs[row + 1]; ++nz) {
@@ -142,7 +142,7 @@ void abstract_filter(std::shared_ptr<const DefaultExecutor> exec,
         new_row_idxs = m_out_coo->get_row_idxs();
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto new_nz = new_row_ptrs[row];
         auto begin = row_ptrs[row];
@@ -319,7 +319,7 @@ void compute_l_u_factors(std::shared_ptr<const DefaultExecutor> exec,
         return std::make_pair(a_val - sum, ut_nz);
     };
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         for (size_type l_nz = l_row_ptrs[row]; l_nz < l_row_ptrs[row + 1] - 1;
              ++l_nz) {

@@ -122,7 +122,7 @@ void add_missing_diagonal_elements(const matrix::Csr<ValueType, IndexType> *mtx,
     const auto old_values = mtx->get_const_values();
     const auto old_col_idxs = mtx->get_const_col_idxs();
     const auto row_ptrs = mtx->get_const_row_ptrs();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (IndexType row = 0; row < num_rows; ++row) {
         const IndexType old_row_start{row_ptrs[row]};
         const IndexType old_row_end{row_ptrs[row + 1]};
@@ -199,7 +199,7 @@ void add_diagonal_elements(std::shared_ptr<const OmpExecutor> exec,
 
     auto old_row_ptrs_ptr = mtx->get_row_ptrs();
     auto row_ptrs_addition_ptr = row_ptrs_addition.get_const_data();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (IndexType i = 0; i < row_ptrs_size; ++i) {
         old_row_ptrs_ptr[i] += row_ptrs_addition_ptr[i];
     }
@@ -224,7 +224,7 @@ void initialize_row_ptrs_l_u(
     auto col_idxs = system_matrix->get_const_col_idxs();
 
 // Calculate the NNZ per row first
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         size_type l_nnz{};
         size_type u_nnz{};
@@ -266,7 +266,7 @@ void initialize_l_u(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs_u = csr_u->get_col_idxs();
     auto vals_u = csr_u->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < system_matrix->get_size()[0]; ++row) {
         size_type current_index_l = row_ptrs_l[row];
         size_type current_index_u =
@@ -314,7 +314,7 @@ void initialize_row_ptrs_l(
     auto col_idxs = system_matrix->get_const_col_idxs();
 
 // Calculate the NNZ per row first
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         size_type l_nnz{};
         for (size_type el = row_ptrs[row]; el < row_ptrs[row + 1]; ++el) {
@@ -347,7 +347,7 @@ void initialize_l(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs_l = csr_l->get_col_idxs();
     auto vals_l = csr_l->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < system_matrix->get_size()[0]; ++row) {
         size_type current_index_l = row_ptrs_l[row];
         // if there is no diagonal value, set it to 1 by default

@@ -71,11 +71,11 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
     constexpr bool has_scalar =
         gko::cb_gmres::detail::has_3d_scaled_accessor<Accessor3d>::value;
     const rc_vtype eta = 1.0 / sqrt(2.0);
-#pragma omp declare reduction(add:ValueType : omp_out = omp_out + omp_in)
-#pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
-#pragma omp declare reduction(infnc:rc_vtype \
-                              : omp_out =    \
-                                    (omp_out >= omp_in ? omp_out : omp_in))
+//#pragma omp declare reduction(add:ValueType : omp_out = omp_out + omp_in)
+//#pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
+//#pragma omp declare reduction(infnc:rc_vtype \
+//                              : omp_out =    \
+//                                    (omp_out >= omp_in ? omp_out : omp_in))
 
     for (size_type i = 0; i < next_krylov_basis->get_size()[1]; ++i) {
         if (stop_status[i].has_stopped()) {
@@ -83,13 +83,13 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
         }
 
         auto nrm = zero<rc_vtype>();
-#pragma omp parallel for reduction(addnc : nrm)
+//#pragma omp parallel for reduction(addnc : nrm)
         for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
             nrm += squared_norm(next_krylov_basis->at(j, i));
         }
         arnoldi_norm->at(0, i) = eta * sqrt(nrm);
         // nrmP = norm(next_krylov_basis)
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type k = 0; k < iter + 1; ++k) {
             ValueType hessenberg_iter_entry = zero<ValueType>();
             for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
@@ -102,7 +102,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
         //     hessenberg(iter, i) = next_krylov_basis' * krylov_bases(:, i)
         // end
         for (size_type k = 0; k < iter + 1; ++k) {
-#pragma omp parallel for
+//#pragma omp parallel for
             for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
                 next_krylov_basis->at(j, i) -=
                     hessenberg_iter->at(k, i) * krylov_bases(k, j, i);
@@ -113,7 +113,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
         // end
         nrm = zero<rc_vtype>();
         auto inf = zero<rc_vtype>();
-#pragma omp parallel for reduction(addnc : nrm) reduction(infnc : inf)
+//#pragma omp parallel for reduction(addnc : nrm) reduction(infnc : inf)
         for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
             nrm += squared_norm(next_krylov_basis->at(j, i));
             inf = (inf >= abs(next_krylov_basis->at(j, i)))
@@ -130,7 +130,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
              l++) {
             arnoldi_norm->at(0, i) = eta * arnoldi_norm->at(1, i);
             // nrmP = nrmN
-#pragma omp parallel for
+//#pragma omp parallel for
             for (size_type k = 0; k < iter + 1; ++k) {
                 ValueType hessenberg_iter_entry = zero<ValueType>();
                 for (size_type j = 0; j < next_krylov_basis->get_size()[0];
@@ -145,7 +145,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
             //     buffer(iter, i) = next_krylov_basis' * krylov_bases(:, i)
             // end
             for (size_type k = 0; k < iter + 1; ++k) {
-#pragma omp parallel for
+//#pragma omp parallel for
                 for (size_type j = 0; j < next_krylov_basis->get_size()[0];
                      ++j) {
                     next_krylov_basis->at(j, i) -=
@@ -158,7 +158,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
             // end
             nrm = zero<rc_vtype>();
             inf = zero<rc_vtype>();
-#pragma omp parallel for reduction(addnc : nrm) reduction(infnc : inf)
+//#pragma omp parallel for reduction(addnc : nrm) reduction(infnc : inf)
             for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
                 nrm += squared_norm(next_krylov_basis->at(j, i));
                 inf = (inf >= abs(next_krylov_basis->at(j, i)))
@@ -178,7 +178,7 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType> *next_krylov_basis,
         // reorthogonalization
         hessenberg_iter->at(iter + 1, i) = (arnoldi_norm->at(1, i));
         // hessenberg(iter, iter + 1) = norm(next_krylov_basis)
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type j = 0; j < next_krylov_basis->get_size()[0]; ++j) {
             next_krylov_basis->at(j, i) /= hessenberg_iter->at(iter + 1, i);
             krylov_bases(iter + 1, j, i) = next_krylov_basis->at(j, i);
@@ -218,7 +218,7 @@ void givens_rotation(matrix::Dense<ValueType> *givens_sin,
                      matrix::Dense<ValueType> *hessenberg_iter, size_type iter,
                      const stopping_status *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < hessenberg_iter->get_size()[1]; ++i) {
         if (stop_status[i].has_stopped()) {
             continue;
@@ -257,7 +257,7 @@ void calculate_next_residual_norm(
     matrix::Dense<ValueType> *residual_norm_collection, size_type iter,
     const stopping_status *stop_status)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < residual_norm->get_size()[1]; ++i) {
         if (stop_status[i].has_stopped()) {
             continue;
@@ -279,7 +279,7 @@ void solve_upper_triangular(
     const matrix::Dense<ValueType> *hessenberg, matrix::Dense<ValueType> *y,
     const size_type *final_iter_nums)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type k = 0; k < residual_norm_collection->get_size()[1]; ++k) {
         for (int64 i = final_iter_nums[k] - 1; i >= 0; --i) {
             auto temp = residual_norm_collection->at(i, k);
@@ -303,7 +303,7 @@ void calculate_qy(ConstAccessor3d krylov_bases,
                   matrix::Dense<ValueType> *before_preconditioner,
                   const size_type *final_iter_nums)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < before_preconditioner->get_size()[0]; ++i) {
         for (size_type k = 0; k < before_preconditioner->get_size()[1]; ++k) {
             before_preconditioner->at(i, k) = zero<ValueType>();
@@ -330,12 +330,12 @@ void initialize_1(std::shared_ptr<const OmpExecutor> exec,
     using rc_vtype = remove_complex<ValueType>;
 
     for (size_type j = 0; j < b->get_size()[1]; ++j) {
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type i = 0; i < b->get_size()[0]; ++i) {
             residual->at(i, j) = b->at(i, j);
         }
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type i = 0; i < krylov_dim; ++i) {
             givens_sin->at(i, j) = zero<ValueType>();
             givens_cos->at(i, j) = zero<ValueType>();
@@ -366,12 +366,12 @@ void initialize_2(std::shared_ptr<const OmpExecutor> exec,
         auto res_norm = zero<rc_vtype>();
         auto res_inf = zero<rc_vtype>();
 
-#pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
-#pragma omp declare reduction(infnc:rc_vtype \
-                              : omp_out =    \
+//#pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
+//#pragma omp declare reduction(infnc:rc_vtype \
+//                              : omp_out =    \
                                     (omp_out >= omp_in ? omp_out : omp_in))
 
-#pragma omp parallel for reduction(addnc : res_norm) reduction(infnc : res_inf)
+//#pragma omp parallel for reduction(addnc : res_norm) reduction(infnc : res_inf)
         for (size_type i = 0; i < residual->get_size()[0]; ++i) {
             res_norm += squared_norm(residual->at(i, j));
             res_inf = (res_inf >= abs(residual->at(i, j)))
@@ -386,7 +386,7 @@ void initialize_2(std::shared_ptr<const OmpExecutor> exec,
             krylov_bases, {0}, j,
             arnoldi_norm->at(2, j) / residual_norm->at(0, j));
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type i = 0; i < krylov_dim + 1; ++i) {
             if (i == 0) {
                 residual_norm_collection->at(i, j) = residual_norm->at(0, j);
@@ -395,7 +395,7 @@ void initialize_2(std::shared_ptr<const OmpExecutor> exec,
             }
         }
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type i = 0; i < residual->get_size()[0]; ++i) {
             auto value = residual->at(i, j) / residual_norm->at(0, j);
             krylov_bases(0, i, j) = value;
@@ -404,7 +404,7 @@ void initialize_2(std::shared_ptr<const OmpExecutor> exec,
         final_iter_nums->get_data()[j] = 0;
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type k = 1; k < krylov_dim + 1; ++k) {
         for (size_type j = 0; j < residual->get_size()[1]; ++j) {
             gko::cb_gmres::helper_functions_accessor<Accessor3d>::write_scalar(
@@ -436,7 +436,7 @@ void step_1(std::shared_ptr<const OmpExecutor> exec,
             const Array<stopping_status> *stop_status, Array<stopping_status> *,
             Array<size_type> *)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < final_iter_nums->get_num_elems(); ++i) {
         final_iter_nums->get_data()[i] +=
             (1 - static_cast<size_type>(

@@ -79,7 +79,7 @@ void spmv(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs = a->get_const_col_idxs();
     auto vals = a->get_const_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; ++row) {
         for (size_type j = 0; j < c->get_size()[1]; ++j) {
             c->at(row, j) = zero<ValueType>();
@@ -112,7 +112,7 @@ void advanced_spmv(std::shared_ptr<const OmpExecutor> exec,
     auto valpha = alpha->at(0, 0);
     auto vbeta = beta->at(0, 0);
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; ++row) {
         for (size_type j = 0; j < c->get_size()[1]; ++j) {
             c->at(row, j) *= vbeta;
@@ -338,7 +338,7 @@ void spgemm(std::shared_ptr<const OmpExecutor> exec,
     auto col_heap = col_heap_array.get_data();
 
     // first sweep: count nnz for each row
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
         c_row_ptrs[a_row] = spgemm_multiway_merge(
             a_row, a, b, col_heap, [](size_type) { return IndexType{}; },
@@ -366,7 +366,7 @@ void spgemm(std::shared_ptr<const OmpExecutor> exec,
     auto c_col_idxs = c_col_idxs_array.get_data();
     auto c_vals = c_vals_array.get_data();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
         spgemm_multiway_merge(
             a_row, a, b, heap,
@@ -415,7 +415,7 @@ void advanced_spgemm(std::shared_ptr<const OmpExecutor> exec,
         reinterpret_cast<col_heap_element<ValueType, IndexType> *>(heap);
 
     // first sweep: count nnz for each row
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
         auto d_nz = d_row_ptrs[a_row];
         auto d_end = d_row_ptrs[a_row + 1];
@@ -449,7 +449,7 @@ void advanced_spgemm(std::shared_ptr<const OmpExecutor> exec,
     auto c_col_idxs = c_col_idxs_array.get_data();
     auto c_vals = c_vals_array.get_data();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
         auto d_nz = d_row_ptrs[a_row];
         auto d_end = d_row_ptrs[a_row + 1];
@@ -590,7 +590,7 @@ void convert_to_dense(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs = source->get_const_col_idxs();
     auto vals = source->get_const_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         for (size_type col = 0; col < num_cols; ++col) {
             result->at(row, col) = zero<ValueType>();
@@ -729,7 +729,7 @@ void convert_to_hybrid(std::shared_ptr<const OmpExecutor> exec,
     const auto max_nnz_per_row = result->get_ell_num_stored_elements_per_row();
 
 // Initial Hybrid Matrix
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < max_nnz_per_row; i++) {
         for (size_type j = 0; j < result->get_ell_stride(); j++) {
             result->ell_val_at(j, i) = zero<ValueType>();
@@ -743,7 +743,7 @@ void convert_to_hybrid(std::shared_ptr<const OmpExecutor> exec,
     auto coo_offset_val = coo_offset.get_data();
 
     coo_offset_val[0] = 0;
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 1; i < num_rows; i++) {
         auto temp = csr_row_ptrs[i] - csr_row_ptrs[i - 1];
         coo_offset_val[i] = (temp > max_nnz_per_row) * (temp - max_nnz_per_row);
@@ -752,17 +752,17 @@ void convert_to_hybrid(std::shared_ptr<const OmpExecutor> exec,
     auto workspace = Array<IndexType>(exec, num_rows);
     auto workspace_val = workspace.get_data();
     for (size_type i = 1; i < num_rows; i <<= 1) {
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type j = i; j < num_rows; j++) {
             workspace_val[j] = coo_offset_val[j] + coo_offset_val[j - i];
         }
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_type j = i; j < num_rows; j++) {
             coo_offset_val[j] = workspace_val[j];
         }
     }
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (IndexType row = 0; row < num_rows; row++) {
         size_type ell_idx = 0;
         size_type csr_idx = csr_row_ptrs[row];
@@ -794,7 +794,7 @@ void invert_permutation(std::shared_ptr<const DefaultExecutor> exec,
                         size_type size, const IndexType *permutation_indices,
                         IndexType *inv_permutation)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (IndexType i = 0; i < static_cast<IndexType>(size); ++i) {
         inv_permutation[permutation_indices[i]] = i;
     }
@@ -817,14 +817,14 @@ void inv_symm_permute(std::shared_ptr<const DefaultExecutor> exec,
     auto p_vals = permuted->get_values();
     size_type num_rows = orig->get_size()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = row;
         auto dst_row = perm[row];
         p_row_ptrs[dst_row] = in_row_ptrs[src_row + 1] - in_row_ptrs[src_row];
     }
     components::prefix_sum(exec, p_row_ptrs, num_rows + 1);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = row;
         auto dst_row = perm[row];
@@ -855,7 +855,7 @@ void row_permute(std::shared_ptr<const OmpExecutor> exec, const IndexType *perm,
     auto rp_vals = row_permuted->get_values();
     size_type num_rows = orig->get_size()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = perm[row];
         auto dst_row = row;
@@ -863,7 +863,7 @@ void row_permute(std::shared_ptr<const OmpExecutor> exec, const IndexType *perm,
             orig_row_ptrs[src_row + 1] - orig_row_ptrs[src_row];
     }
     components::prefix_sum(exec, rp_row_ptrs, num_rows + 1);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = perm[row];
         auto dst_row = row;
@@ -894,7 +894,7 @@ void inverse_row_permute(std::shared_ptr<const OmpExecutor> exec,
     auto rp_vals = row_permuted->get_values();
     size_type num_rows = orig->get_size()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = row;
         auto dst_row = perm[row];
@@ -902,7 +902,7 @@ void inverse_row_permute(std::shared_ptr<const OmpExecutor> exec,
             orig_row_ptrs[src_row + 1] - orig_row_ptrs[src_row];
     }
     components::prefix_sum(exec, rp_row_ptrs, num_rows + 1);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto src_row = row;
         auto dst_row = perm[row];
@@ -933,7 +933,7 @@ void inverse_column_permute(std::shared_ptr<const OmpExecutor> exec,
     auto cp_vals = column_permuted->get_values();
     size_type num_rows = orig->get_size()[0];
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         cp_row_ptrs[row] = orig_row_ptrs[row];
         for (auto k = orig_row_ptrs[row]; k < orig_row_ptrs[row + 1]; ++k) {
@@ -956,7 +956,7 @@ void calculate_nonzeros_per_row(std::shared_ptr<const OmpExecutor> exec,
     const auto row_ptrs = source->get_const_row_ptrs();
     auto row_nnz_val = result->get_data();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < result->get_num_elems(); i++) {
         row_nnz_val[i] = row_ptrs[i + 1] - row_ptrs[i];
     }
@@ -974,7 +974,7 @@ void sort_by_column_index(std::shared_ptr<const OmpExecutor> exec,
     auto row_ptrs = to_sort->get_row_ptrs();
     auto col_idxs = to_sort->get_col_idxs();
     const auto number_rows = to_sort->get_size()[0];
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < number_rows; ++i) {
         auto start_row_idx = row_ptrs[i];
         auto row_nnz = row_ptrs[i + 1] - start_row_idx;
@@ -997,7 +997,7 @@ void is_sorted_by_column_index(
     const auto col_idxs = to_check->get_const_col_idxs();
     const auto size = to_check->get_size();
     bool local_is_sorted = true;
-#pragma omp parallel for reduction(&& : local_is_sorted)
+//#pragma omp parallel for reduction(&& : local_is_sorted)
     for (size_type i = 0; i < size[0]; ++i) {
         // Skip comparison if any thread detects that it is not sorted
         if (local_is_sorted) {
@@ -1027,7 +1027,7 @@ void extract_diagonal(std::shared_ptr<const OmpExecutor> exec,
     const auto diag_size = diag->get_size()[0];
     auto diag_values = diag->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < diag_size; ++row) {
         for (size_type idx = row_ptrs[row]; idx < row_ptrs[row + 1]; ++idx) {
             if (col_idxs[idx] == row) {

@@ -72,7 +72,7 @@ void abstract_spgeam(const matrix::Csr<ValueType, IndexType> *a,
     auto b_col_idxs = b->get_const_col_idxs();
     auto b_vals = b->get_const_values();
     constexpr auto sentinel = std::numeric_limits<IndexType>::max();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; ++row) {
         auto a_begin = a_row_ptrs[row];
         auto a_end = a_row_ptrs[row + 1];

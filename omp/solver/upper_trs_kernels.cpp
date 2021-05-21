@@ -103,7 +103,7 @@ void solve(std::shared_ptr<const OmpExecutor> exec,
     auto col_idxs = matrix->get_const_col_idxs();
     auto vals = matrix->get_const_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type j = 0; j < b->get_size()[1]; ++j) {
         for (size_type inv_row = 0; inv_row < matrix->get_size()[0];
              ++inv_row) {

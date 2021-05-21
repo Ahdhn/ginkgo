@@ -43,7 +43,7 @@ template <typename SourceType, typename TargetType>
 void convert_precision(std::shared_ptr<const DefaultExecutor> exec,
                        size_type size, const SourceType *in, TargetType *out)
 {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < size; ++i) {
         out[i] = in[i];
     }

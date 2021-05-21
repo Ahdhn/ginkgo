@@ -220,8 +220,8 @@ int main(int argc, char *argv[])
     gko::size_type discretization_points = dimx*dimy*dimz;
 
     // executor where Ginkgo will perform the computation    
-    const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
-    //const auto exec = gko::OmpExecutor::create();
+    //const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
+    const auto exec = gko::OmpExecutor::create();
 
     // executor used by the application
     const auto app_exec = exec->get_master();

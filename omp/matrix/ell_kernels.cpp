@@ -80,7 +80,7 @@ void spmv(std::shared_ptr<const OmpExecutor> exec,
         std::array<size_type, 2>{{b->get_size()[0], b->get_size()[1]}},
         b->get_const_values(), std::array<size_type, 1>{{b->get_stride()}});
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; row++) {
         for (size_type j = 0; j < c->get_size()[1]; j++) {
             c->at(row, j) = zero<OutputValueType>();
@@ -125,7 +125,7 @@ void advanced_spmv(std::shared_ptr<const OmpExecutor> exec,
     const auto alpha_val = OutputValueType(alpha->at(0, 0));
     const auto beta_val = beta->at(0, 0);
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < a->get_size()[0]; row++) {
         for (size_type j = 0; j < c->get_size()[1]; j++) {
             c->at(row, j) *= beta_val;
@@ -154,7 +154,7 @@ void convert_to_dense(std::shared_ptr<const OmpExecutor> exec,
     auto num_stored_elements_per_row =
         source->get_num_stored_elements_per_row();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < num_rows; row++) {
         for (size_type col = 0; col < num_cols; col++) {
             result->at(row, col) = zero<ValueType>();
@@ -188,7 +188,7 @@ void count_nonzeros(std::shared_ptr<const OmpExecutor> exec,
     const auto max_nnz_per_row = source->get_num_stored_elements_per_row();
     const auto stride = source->get_stride();
 
-#pragma omp parallel for reduction(+ : nonzeros)
+//#pragma omp parallel for reduction(+ : nonzeros)
     for (size_type row = 0; row < num_rows; row++) {
         for (size_type i = 0; i < max_nnz_per_row; i++) {
             nonzeros += (source->val_at(row, i) != zero<ValueType>());
@@ -222,7 +222,7 @@ void extract_diagonal(std::shared_ptr<const OmpExecutor> exec,
     const auto max_nnz_per_row = orig->get_num_stored_elements_per_row();
     auto diag_values = diag->get_values();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < diag_size; row++) {
         for (size_type i = 0; i < max_nnz_per_row; i++) {
             if (orig->col_at(row, i) == row) {

@@ -73,7 +73,7 @@ void match_edge(std::shared_ptr<const OmpExecutor> exec,
 {
     auto agg_vals = agg.get_data();
     auto strongest_neighbor_vals = strongest_neighbor.get_const_data();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < agg.get_num_elems(); i++) {
         if (agg_vals[i] == -1) {
             auto neighbor = strongest_neighbor_vals[i];
@@ -95,7 +95,7 @@ void count_unagg(std::shared_ptr<const OmpExecutor> exec,
                  const Array<IndexType> &agg, IndexType *num_unagg)
 {
     IndexType unagg = 0;
-#pragma omp parallel for reduction(+ : unagg)
+//#pragma omp parallel for reduction(+ : unagg)
     for (size_type i = 0; i < agg.get_num_elems(); i++) {
         unagg += (agg.get_const_data()[i] == -1);
     }
@@ -115,12 +115,12 @@ void renumber(std::shared_ptr<const OmpExecutor> exec, Array<IndexType> &agg,
     auto agg_map_vals = agg_map.get_data();
     // agg_vals[i] == i always holds in the aggregated group whose identifier is
     // i because we use the index of element as the aggregated group identifier.
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num; i++) {
         agg_map_vals[i] = (agg_vals[i] == i);
     }
     components::prefix_sum(exec, agg_map_vals, num + 1);
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type i = 0; i < num; i++) {
         agg_vals[i] = agg_map_vals[agg_vals[i]];
     }
@@ -141,7 +141,7 @@ void find_strongest_neighbor(
     const auto col_idxs = weight_mtx->get_const_col_idxs();
     const auto vals = weight_mtx->get_const_values();
     const auto diag_vals = diag->get_const_values();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_type row = 0; row < agg.get_num_elems(); row++) {
         auto max_weight_unagg = zero<ValueType>();
         auto max_weight_agg = zero<ValueType>();
@@ -201,7 +201,7 @@ void assign_to_exist_agg(std::shared_ptr<const OmpExecutor> exec,
                        ? intermediate_agg.get_data()
                        : agg.get_data();
     const auto diag_vals = diag->get_const_values();
-#pragma omp parallel for
+//#pragma omp parallel for
     for (IndexType row = 0; row < agg.get_num_elems(); row++) {
         if (agg_const_val[row] != -1) {
             continue;
