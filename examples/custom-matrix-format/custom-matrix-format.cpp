@@ -221,7 +221,7 @@ protected:
             // CUDA implementation
             void run(std::shared_ptr<const gko::CudaExecutor>) const override
             {
-                stencil_kernel<ValueType, ValueType>(
+                stencil_kernel<ValueType, BoundaryType>(
                     output->get_size()[0], m_m_bd->get_const_values(),
                     input->get_const_values(), output->get_values(), dimx, dimy,
                     dimz, init);
@@ -287,6 +287,8 @@ int main(int argc, char *argv[])
     using mtx = gko::matrix::Csr<ValueType, IndexType>;
     using cg = gko::solver::Cg<ValueType>;
 
+    gko::size_type max_num_iter = 1000;
+    const RealValueType reduction_factor{1e-10};
     uint32_t dimx = 4;
     uint32_t dimy = 4;
     uint32_t dimz = 4;
@@ -341,20 +343,39 @@ int main(int argc, char *argv[])
     }
 
 
-    const RealValueType reduction_factor{1e-10};
+    std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
+        gko::log::Convergence<ValueType>::create(exec);
+
+    auto iter_stop =
+        gko::stop::Iteration::build().with_max_iters(max_num_iter).on(exec);
+    auto tol_stop = gko::stop::ResidualNorm<ValueType>::build()
+                        .with_reduction_factor(reduction_factor)
+                        .on(exec);
+    iter_stop->add_logger(logger);
+    tol_stop->add_logger(logger);
+
+
     // Generate solver and solve the system
-    gko::size_type max_num_iter = 1000;
-    cg::build()
-        .with_criteria(
-            gko::stop::Iteration::build().with_max_iters(max_num_iter).on(exec),
-            gko::stop::ResidualNorm<ValueType>::build()
-                .with_reduction_factor(reduction_factor)
-                .on(exec))
-        .on(exec)
-        ->generate(StencilMatrix<ValueType, BoundaryType>::create(
-            exec, lend(bd), dimx, dimy, dimz))
-        ->apply(lend(rhs), lend(u));
+    auto solver =
+        cg::build()
+            .with_criteria(gko::share(iter_stop), gko::share(tol_stop))
+            .on(exec)
+            ->generate(StencilMatrix<ValueType, BoundaryType>::create(
+                exec, lend(bd), dimx, dimy, dimz));
+    exec->synchronize();
+
+    std::chrono::nanoseconds time(0);
+    auto tic = std::chrono::steady_clock::now();
+    solver->apply(lend(rhs), lend(u));
+    auto toc = std::chrono::steady_clock::now();
+    time += std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic);
+
+    std::cout << "CG iteration count:     " << logger->get_num_iterations()
+              << std::endl;
+    std::cout << "CG execution time [ms]: "
+              << static_cast<double>(time.count()) / 1000000.0 << std::endl;
 
     std::cout << "\nSolve complete.\n";
+
     // print_solution(lend(u), dimx, dimy, dimz);
 }
