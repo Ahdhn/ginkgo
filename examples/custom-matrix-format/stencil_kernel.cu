@@ -38,39 +38,81 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace {
 
 template <typename T>
-__device__ __forceinline__ T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y, const T dim_z)
-{    
+__device__ __forceinline__ T pitch(const T i, const T j, const T k,
+                                   const T dim_x, const T dim_y, const T dim_z)
+{
     return k * dim_y * dim_z + j * dim_y + i;
 }
 
 // a parallel CUDA kernel that computes the application of a 3 point stencil
 template <typename ValueType, typename BoundaryType>
 __global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
-                                    const ValueType *b, ValueType *x, std::size_t dimx, std::size_t dimy, std::size_t dimz)
+                                    const ValueType *input, ValueType *output,
+                                    std::size_t dimx, std::size_t dimy,
+                                    std::size_t dimz, bool init)
 {
     const int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (thread_id >= size) {
         return;
     }
-    int k = thread_id / (dimy * dimx); 
-    const int blah = thread_id - (k * dimx * dimy);
-    int j = blah / dimx;
-    int i = blah % dimx;
-    
-    //assert(pitch(i,j,k,dimx, dimy, dimz) == thread_id);
+    std::size_t k = thread_id / (dimy * dimx);
+    const std::size_t blah = thread_id - (k * dimx * dimy);
+    std::size_t j = blah / dimx;
+    std::size_t i = blah % dimx;
 
-    //printf("\n i= %d, j= %d, k= %d x= %f, b= %f, bd= %f", i, j, k, 
-    //            x[thread_id], b[thread_id], bd[thread_id]);
-    printf("\n i= %d, j= %d, k= %d, x= %f, b= %f", i, j, k, x[thread_id], b[thread_id]);
+    // assert(pitch(i,j,k,dimx, dimy, dimz) == thread_id);
 
-    /*auto result = coefs[1] * b[thread_id];
-    if (thread_id > 0) {
-        result += coefs[0] * b[thread_id - 1];
+    // printf("\n i= %d, j= %d, k= %d, output= %f, input= %f, bd= %f", i, j, k,
+    //       output[thread_id], input[thread_id], bd[thread_id]);
+
+    auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
+
+    const ValueType center = input[center_pitch];
+
+    if (bd[center_pitch] == 0) {
+        if (!init) {
+            output[center_pitch] = 0;
+        } else {
+            output[center_pitch] = center;
+        }
+
+    } else {
+        ValueType sum = 0.0;
+        int numNeighb = 0;
+
+        if (i > 0) {
+            ++numNeighb;
+            sum += input[pitch(i - 1, j, k, dimx, dimy, dimz)];
+        }
+
+        if (j > 0) {
+            ++numNeighb;
+            sum += input[pitch(i, j - 1, k, dimx, dimy, dimz)];
+        }
+
+        if (k > 0) {
+            ++numNeighb;
+            sum += input[pitch(i, j, k - 1, dimx, dimy, dimz)];
+        }
+
+        if (i < dimx - 1) {
+            ++numNeighb;
+            sum += input[pitch(i + 1, j, k, dimx, dimy, dimz)];
+        }
+
+        if (j < dimy - 1) {
+            ++numNeighb;
+            sum += input[pitch(i, j + 1, k, dimx, dimy, dimz)];
+        }
+
+        if (k < dimz - 1) {
+            ++numNeighb;
+            sum += input[pitch(i, j, k + 1, dimx, dimy, dimz)];
+        }
+        const ValueType invh2 = ValueType(1.0);
+        output[center_pitch] =
+            (-sum + static_cast<ValueType>(numNeighb) * center) * invh2;
     }
-    if (thread_id < size - 1) {
-        result += coefs[2] * b[thread_id + 1];
-    }
-    x[thread_id] = result;*/
 }
 
 
@@ -78,13 +120,21 @@ __global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
 
 
 template <typename ValueType, typename BoundaryType>
-void stencil_kernel(std::size_t size, const BoundaryType *bd, const ValueType *b, ValueType *x,
-                    std::size_t dimx, std::size_t dimy, std::size_t dimz)
+void stencil_kernel(std::size_t size, const BoundaryType *bd,
+                    const ValueType *input, ValueType *output, std::size_t dimx,
+                    std::size_t dimy, std::size_t dimz, bool init)
 {
     constexpr auto block_size = 512;
     const auto grid_size = (size + block_size - 1) / block_size;
-    stencil_kernel_impl<ValueType, BoundaryType><<<grid_size, block_size>>>(size, bd, b, x, dimx, dimy, dimz);
+    stencil_kernel_impl<ValueType, BoundaryType><<<grid_size, block_size>>>(
+        size, bd, input, output, dimx, dimy, dimz, init);
 }
 
-template void stencil_kernel<float, float>(std::size_t size, const float *bd, const float *b, float *x, std::size_t, std::size_t, std::size_t);
-template void stencil_kernel<double, float>(std::size_t size, const float *bd, const double *b, double *x, std::size_t, std::size_t, std::size_t);
+template void stencil_kernel<float, float>(std::size_t size, const float *bd,
+                                           const float *input, float *output,
+                                           std::size_t dimx, std::size_t dimy,
+                                           std::size_t dimz, bool init);
+template void stencil_kernel<double, float>(std::size_t size, const float *bd,
+                                            const double *input, double *output,
+                                            std::size_t dimx, std::size_t dimy,
+                                            std::size_t dimz, bool init);
