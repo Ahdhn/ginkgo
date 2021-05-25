@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // CUDA executor. Unfortunately, NVCC has serious problems interpreting some
 // parts of Ginkgo's code, so the kernel has to be compiled separately.
 template <typename ValueType, typename BoundaryType>
-void stencil_kernel(std::size_t size, const BoundaryType *bd,
+void stencil_kernel(std::size_t size, BoundaryType *bd,
                     const ValueType *input, ValueType *output, std::size_t dimx,
                     std::size_t dimy, std::size_t dimz, bool init);
 
@@ -77,7 +77,7 @@ public:
     using vec_bd = gko::matrix::Dense<BoundaryType>;
 
     StencilMatrix(std::shared_ptr<const gko::Executor> exec,
-                  const vec_bd *bd = NULL, gko::size_type dimx = 0,
+                  vec_bd *bd = NULL, gko::size_type dimx = 0,
                   gko::size_type dimy = 0, gko::size_type dimz = 0)
         : gko::EnableLinOp<StencilMatrix>(exec,
                                           gko::dim<2>{dimx * dimy * dimz}),
@@ -88,7 +88,7 @@ public:
     {}
 
 protected:
-    const vec_bd *m_bd;
+    vec_bd *m_bd;
     gko::size_type dimx;
     gko::size_type dimy;
     gko::size_type dimz;
@@ -112,7 +112,7 @@ protected:
         // we need separate implementations depending on the executor, so we
         // create an operation which maps the call to the correct implementation
         struct stencil_operation : gko::Operation {
-            stencil_operation(const vec_bd *bd, const vec *input, vec *output,
+            stencil_operation(vec_bd *bd, const vec *input, vec *output,
                               gko::size_type dimx = 0, gko::size_type dimy = 0,
                               gko::size_type dimz = 0)
                 : m_m_bd(bd),
@@ -128,7 +128,7 @@ protected:
             {
                 auto input_values = input->get_const_values();
                 auto output_values = output->get_values();
-                auto bd_values = m_m_bd->get_const_values();
+                auto bd_values = m_m_bd->get_values();
 
                 // printf("\n ***** dim= %u, %u, %u", dimx, dimy, dimz);
 
@@ -146,8 +146,16 @@ protected:
                             //    j, k, dimx, dimy, dimz)], bd_values[pitch(i,
                             //    j, k, dimx, dimy, dimz)]);
 
-                            auto center_pitch =
-                                pitch(i, j, k, dimx, dimy, dimz);
+                            auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
+                            if(!init){
+                                if (k == 0 || k == dimz - 1) {
+                                    bd_values[center_pitch] = 0;
+                                } else {
+                                    bd_values[center_pitch] = 1;
+                                }
+                            }
+
+                            
                             const ValueType center = input_values[center_pitch];
                             if (bd_values[center_pitch] == 0) {
                                 if (!init) {
@@ -155,7 +163,6 @@ protected:
                                 } else {
                                     output_values[center_pitch] = center;
                                 }
-
 
                             } else {
                                 ValueType sum = 0.0;
@@ -222,12 +229,12 @@ protected:
             void run(std::shared_ptr<const gko::CudaExecutor>) const override
             {
                 stencil_kernel<ValueType, BoundaryType>(
-                    output->get_size()[0], m_m_bd->get_const_values(),
+                    output->get_size()[0], m_m_bd->get_values(),
                     input->get_const_values(), output->get_values(), dimx, dimy,
                     dimz, init);
             }
 
-            const vec_bd *m_m_bd;
+            vec_bd *m_m_bd;
             const vec *input;
             vec *output;
 
@@ -297,12 +304,12 @@ int main(int argc, char *argv[])
     // executor where Ginkgo will perform the computation
     const auto exec =
         gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
-    // const auto exec = gko::OmpExecutor::create();
+    //const auto exec = gko::OmpExecutor::create();
 
     // executor used by the application
     const auto app_exec = exec->get_master();
 
-    // initialize vectors
+    // initialize vectors    
     auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
     for (uint32_t k = 0; k < dimz; ++k) {
         for (uint32_t j = 0; j < dimy; ++j) {
@@ -330,7 +337,7 @@ int main(int argc, char *argv[])
     }
 
     auto bd = bdvec::create(exec, gko::dim<2>(discretization_points, 1));
-    for (uint32_t k = 0; k < dimz; ++k) {
+    /*for (uint32_t k = 0; k < dimz; ++k) {
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
                 if (k == 0 || k == dimz - 1) {
@@ -340,9 +347,8 @@ int main(int argc, char *argv[])
                 }
             }
         }
-    }
-
-
+    }*/
+    
     std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
         gko::log::Convergence<ValueType>::create(exec);
 
@@ -364,9 +370,10 @@ int main(int argc, char *argv[])
                 exec, lend(bd), dimx, dimy, dimz));
     exec->synchronize();
 
+
     std::chrono::nanoseconds time(0);
-    auto tic = std::chrono::steady_clock::now();
-    solver->apply(lend(rhs), lend(u));
+    auto tic = std::chrono::steady_clock::now();    
+    solver->apply(lend(rhs), lend(u));    
     auto toc = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic);
 
@@ -377,5 +384,5 @@ int main(int argc, char *argv[])
 
     std::cout << "\nSolve complete.\n";
 
-    // print_solution(lend(u), dimx, dimy, dimz);
+    //print_solution(lend(u), dimx, dimy, dimz);
 }

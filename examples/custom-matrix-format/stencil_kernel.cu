@@ -46,7 +46,7 @@ __device__ __forceinline__ T pitch(const T i, const T j, const T k,
 
 // a parallel CUDA kernel that computes the application of a 3 point stencil
 template <typename ValueType, typename BoundaryType>
-__global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
+__global__ void stencil_kernel_impl(std::size_t size, BoundaryType *bd,
                                     const ValueType *input, ValueType *output,
                                     std::size_t dimx, std::size_t dimy,
                                     std::size_t dimz, bool init)
@@ -66,6 +66,14 @@ __global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
     //       output[thread_id], input[thread_id], bd[thread_id]);
 
     auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
+
+    if(!init){
+        if (k == 0 || k == dimz - 1) {
+            bd[center_pitch] = 0;
+        } else {
+            bd[center_pitch] = 1;
+        }
+    }
 
     const ValueType center = input[center_pitch];
 
@@ -120,7 +128,7 @@ __global__ void stencil_kernel_impl(std::size_t size, const BoundaryType *bd,
 
 
 template <typename ValueType, typename BoundaryType>
-void stencil_kernel(std::size_t size, const BoundaryType *bd,
+void stencil_kernel(std::size_t size, BoundaryType *bd,
                     const ValueType *input, ValueType *output, std::size_t dimx,
                     std::size_t dimy, std::size_t dimz, bool init)
 {
@@ -130,11 +138,11 @@ void stencil_kernel(std::size_t size, const BoundaryType *bd,
         size, bd, input, output, dimx, dimy, dimz, init);
 }
 
-template void stencil_kernel<float, float>(std::size_t size, const float *bd,
+template void stencil_kernel<float, float>(std::size_t size, float *bd,
                                            const float *input, float *output,
                                            std::size_t dimx, std::size_t dimy,
                                            std::size_t dimz, bool init);
-template void stencil_kernel<double, float>(std::size_t size, const float *bd,
+template void stencil_kernel<double, float>(std::size_t size, float *bd,
                                             const double *input, double *output,
                                             std::size_t dimx, std::size_t dimy,
                                             std::size_t dimz, bool init);
