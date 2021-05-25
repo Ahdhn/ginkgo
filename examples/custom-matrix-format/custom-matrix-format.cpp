@@ -377,10 +377,8 @@ int main(int argc, char *argv[])
     auto toc = std::chrono::steady_clock::now();
     time += std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic);
 
-    std::cout << "CG iteration count:     " << logger->get_num_iterations()
-              << std::endl;
-    std::cout << "CG execution time [ms]: "
-              << static_cast<double>(time.count()) / 1000000.0 << std::endl;
+    std::cout << "CG iteration count: " << logger->get_num_iterations() << std::endl;
+    std::cout << "CG execution time [ms]: " << static_cast<double>(time.count()) / 1000000.0 << std::endl;
 
     std::cout << "\nSolve complete.\n";
 
