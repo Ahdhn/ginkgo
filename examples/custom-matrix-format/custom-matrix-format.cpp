@@ -54,7 +54,7 @@ inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y,
     return k * dim_y * dim_z + j * dim_y + i;
 }
 
-// A stencil matrix class representing the 3pt stencil linear operator.
+// A stencil matrix class representing the 7pt stencil linear operator.
 // We include the gko::EnableLinOp mixin which implements the entire LinOp
 // interface, except the two apply_impl methods, which get called inside the
 // default implementation of apply (after argument verification) to perform the
@@ -97,10 +97,6 @@ protected:
     // apply_impl will be called by the apply method, after the arguments have
     // been moved to the correct executor and the operators checked for
     // conforming sizes.
-    //
-    // For simplicity, we assume that there is always only one right hand side
-    // and the stride of consecutive elements in the vectors is 1 (both of these
-    // are always true in this example).
     void apply_impl(const gko::LinOp *input, gko::LinOp *output) const override
     {
         // we only implement the operator for dense RHS.
@@ -126,12 +122,6 @@ protected:
             // OpenMP implementation
             void run(std::shared_ptr<const gko::OmpExecutor>) const override
             {
-                auto input_values = input->get_const_values();
-                auto output_values = output->get_values();
-                auto bd_values = m_m_bd->get_values();
-
-                // printf("\n ***** dim= %u, %u, %u", dimx, dimy, dimz);
-
                 // assume h = 1
                 const ValueType invh2 = ValueType(1.0);
 
@@ -139,29 +129,22 @@ protected:
                 for (gko::size_type k = 0; k < dimz; ++k) {
                     for (gko::size_type j = 0; j < dimy; ++j) {
                         for (gko::size_type i = 0; i < dimx; ++i) {
-                            // printf(
-                            //    "\n i= %u, j= %u, k= %u output= %f, input= %f,
-                            //    " "bd= %f", i, j, k, output_values[pitch(i, j,
-                            //    k, dimx, dimy, dimz)], input_values[pitch(i,
-                            //    j, k, dimx, dimy, dimz)], bd_values[pitch(i,
-                            //    j, k, dimx, dimy, dimz)]);
-
+             
                             auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
                             if(!init){
-                                if (k == 0 || k == dimz - 1) {
-                                    bd_values[center_pitch] = 0;
-                                } else {
-                                    bd_values[center_pitch] = 1;
+                                if (k == 0 || k == dimz - 1) {             
+                                    m_m_bd->at(center_pitch,0) = 0;
+                                } else {                                    
+                                    m_m_bd->at(center_pitch,0) = 1;
                                 }
                             }
 
-                            
-                            const ValueType center = input_values[center_pitch];
-                            if (bd_values[center_pitch] == 0) {
-                                if (!init) {
-                                    output_values[center_pitch] = 0;
-                                } else {
-                                    output_values[center_pitch] = center;
+                            const ValueType center = input->at(center_pitch,0);                            
+                            if (m_m_bd->at(center_pitch,0) == 0) {
+                                if (!init) {                                    
+                                    output->at(center_pitch,0) = 0;
+                                } else {                                    
+                                    output->at(center_pitch,0) = center;
                                 }
 
                             } else {
@@ -169,60 +152,41 @@ protected:
                                 int numNeighb = 0;
 
                                 if (i > 0) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i - 1, j, k, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i - 1, j, k, dimx,dimy, dimz),0);
                                 }
 
                                 if (j > 0) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i, j - 1, k, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i, j - 1, k, dimx,dimy, dimz),0);
                                 }
 
                                 if (k > 0) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i, j, k - 1, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i, j, k - 1, dimx,dimy, dimz),0);
                                 }
 
                                 if (i < dimx - 1) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i + 1, j, k, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i + 1, j, k, dimx,dimy, dimz),0);
                                 }
 
                                 if (j < dimy - 1) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i, j + 1, k, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i, j + 1, k, dimx, dimy, dimz),0);
                                 }
 
                                 if (k < dimz - 1) {
-                                    ++numNeighb;
-                                    sum += input_values[pitch(i, j, k + 1, dimx,
-                                                              dimy, dimz)];
+                                    ++numNeighb;                                    
+                                    sum += input->at(pitch(i, j, k + 1, dimx,dimy, dimz),0);
                                 }
 
-                                output_values[center_pitch] =
-                                    (-sum + static_cast<ValueType>(numNeighb) *
-                                                center) *
-                                    invh2;
+                                output->at(center_pitch,0) =
+                                    (-sum + static_cast<ValueType>(numNeighb) * center) * invh2;
                             }
                         }
                     }
                 }
-
-                /*printf("\n **** ");
-                for (gko::size_type k = 0; k < dimz; ++k) {
-                    for (gko::size_type j = 0; j < dimy; ++j) {
-                        for (gko::size_type i = 0; i < dimx; ++i) {
-                            printf("\n i= %u, j= %u, k= %u output= %f", i, j, k,
-                                   output_values[pitch(i, j, k, dimx, dimy,
-                                                       dimz)]);
-                        }
-                    }
-                }*/
             }
 
             // CUDA implementation
@@ -302,53 +266,41 @@ int main(int argc, char *argv[])
     gko::size_type discretization_points = dimx * dimy * dimz;
 
     // executor where Ginkgo will perform the computation
-    const auto exec =
-        gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
-    //const auto exec = gko::OmpExecutor::create();
+    //const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
+    const auto exec = gko::OmpExecutor::create();
 
     // executor used by the application
     const auto app_exec = exec->get_master();
 
-    // initialize vectors    
-    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
+    // initialize vectors        
+    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
     for (uint32_t k = 0; k < dimz; ++k) {
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
-                rhs->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = 0.;
+                rhs->at(pitch(i, j, k, dimx, dimy, dimz),0) = 0.;                
             }
         }
     }
 
-    auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));
+    auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
     ValueType bdZmin = -20.0;
     ValueType bdZMax = 20.0;
     for (uint32_t k = 0; k < dimz; ++k) {
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
                 if (k == 0) {
-                    u->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = bdZmin;
+                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = bdZmin;                    
                 } else if (k == dimz - 1) {
-                    u->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = bdZMax;
+                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = bdZMax;                    
                 } else {
-                    u->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = 0.0;
+                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = 0.0;                    
                 }
             }
         }
     }
 
     auto bd = bdvec::create(exec, gko::dim<2>(discretization_points, 1));
-    /*for (uint32_t k = 0; k < dimz; ++k) {
-        for (uint32_t j = 0; j < dimy; ++j) {
-            for (uint32_t i = 0; i < dimx; ++i) {
-                if (k == 0 || k == dimz - 1) {
-                    bd->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = 0;
-                } else {
-                    bd->get_values()[pitch(i, j, k, dimx, dimy, dimz)] = 1;
-                }
-            }
-        }
-    }*/
-    
+        
     std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
         gko::log::Convergence<ValueType>::create(exec);
 
@@ -382,5 +334,5 @@ int main(int argc, char *argv[])
 
     std::cout << "\nSolve complete.\n";
 
-    //print_solution(lend(u), dimx, dimy, dimz);
+    print_solution(lend(u), dimx, dimy, dimz);
 }
