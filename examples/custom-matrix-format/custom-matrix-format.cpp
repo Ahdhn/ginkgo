@@ -37,6 +37,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <omp.h>
 #include <ginkgo/ginkgo.hpp>
+#include "perfkeeper.h"
+#include "clipp.h"
+
+int         DOMAIN_SIZE = 8;  
+size_t      MAX_ITER = 10000;   
+double      TOL = 1e-10;        
+double      ZMIN = -20.0;
+double      ZMAX = +20.0;
+int         CARDINALITY = 1;
+std::string KEEPER_FILENAME = "keeper";
+int         TIMES = 1;
 
 template <typename T>
 inline T pitch(const T i, const T j, const T k, const T c, const T dim_x, const T dim_y, const T dim_z)
@@ -290,7 +301,7 @@ void print_solution(const gko::matrix::Dense<ValueType> *u, uint32_t dimx,
     }
 }
 
-int main(int argc, char *argv[])
+inline void run()
 {
     // Some shortcuts
     using ValueType = double;
@@ -302,12 +313,26 @@ int main(int argc, char *argv[])
     using bdvec = gko::matrix::Dense<BoundaryType>;
     using mtx = gko::matrix::Csr<ValueType, IndexType>;
     using cg = gko::solver::Cg<ValueType>;
+    
+    Neon::PerfKeeper_t keeper;
 
-    gko::size_type max_num_iter = 1000;
-    const RealValueType reduction_factor{1e-10};
-    uint32_t dimx = 50;
-    uint32_t dimy = 50;
-    uint32_t dimz = 50;
+    auto recordId = keeper.addRecord("Poisson_Ginkgo_" + std::to_string(CARDINALITY) + "D_1GPUs", Neon::PerfKeeper_t::addDefaultInfo);
+    keeper.addStaticAtt(recordId, "maxIters", std::to_string(MAX_ITER), true);
+    keeper.addStaticAtt(recordId, "voxelDomain", std::to_string(DOMAIN_SIZE)+ "_" + std::to_string(DOMAIN_SIZE) + "_" + std::to_string(DOMAIN_SIZE), true);
+    keeper.addStaticAtt(recordId, "cardinality", std::to_string(CARDINALITY), true);
+    keeper.addStaticAtt(recordId, "numGPUs", std::to_string(1), true, "nGPUs");
+    keeper.addStaticAtt(recordId, "absTol", std::to_string(TOL), true);
+
+    auto dynAttTimeSol = keeper.addDynamicAtt(recordId, "TimeToSolution", "ms");
+    auto dynAttTimeTotal = keeper.addDynamicAtt(recordId, "TimeTotal", "ms");
+    auto dynAttResidualStart = keeper.addDynamicAtt(recordId, "ResidualStart", "");
+    auto dynAttResidualFinal = keeper.addDynamicAtt(recordId, "ResidualFinal", "");
+    auto dynAttIterationsTaken = keeper.addDynamicAtt(recordId, "IterationsTaken", "");
+
+    const RealValueType reduction_factor{TOL};
+    uint32_t dimx = DOMAIN_SIZE;
+    uint32_t dimy = DOMAIN_SIZE;
+    uint32_t dimz = DOMAIN_SIZE;
     uint32_t cardinality = 1;
     gko::size_type discretization_points = dimx * dimy * dimz * cardinality;
 
@@ -318,68 +343,98 @@ int main(int argc, char *argv[])
     // executor used by the application
     const auto app_exec = exec->get_master();
 
-    // initialize vectors        
-    auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
-    for (uint32_t k = 0; k < dimz; ++k) {
-        for (uint32_t j = 0; j < dimy; ++j) {
-            for (uint32_t i = 0; i < dimx; ++i) {
-                rhs->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.;                
-            }
-        }
-    }
-
-    auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
-    ValueType bdZmin = -20.0;
-    ValueType bdZMax = 20.0;
-    for (uint32_t k = 0; k < dimz; ++k) {
-        for (uint32_t j = 0; j < dimy; ++j) {
-            for (uint32_t i = 0; i < dimx; ++i) {
-                if (k == 0) {
-                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZmin;                    
-                } else if (k == dimz - 1) {
-                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZMax;                    
-                } else {
-                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.0;                    
+    for (int t = 0; t < TIMES; ++t) {
+        // initialize vectors        
+        auto rhs = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
+        for (uint32_t k = 0; k < dimz; ++k) {
+            for (uint32_t j = 0; j < dimy; ++j) {
+                for (uint32_t i = 0; i < dimx; ++i) {
+                    rhs->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.;                
                 }
             }
         }
-    }
-    
-    auto bd = bdvec::create(exec, gko::dim<2>(discretization_points, 1));
+
+        auto u = vec::create(app_exec, gko::dim<2>(discretization_points, 1));    
+        ValueType bdZmin(ZMIN);
+        ValueType bdZMax(ZMAX);
+        for (uint32_t k = 0; k < dimz; ++k) {
+            for (uint32_t j = 0; j < dimy; ++j) {
+                for (uint32_t i = 0; i < dimx; ++i) {
+                    if (k == 0) {
+                        u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZmin;                    
+                    } else if (k == dimz - 1) {
+                        u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZMax;                    
+                    } else {
+                        u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.0;                    
+                    }
+                }
+            }
+        }
+
+        auto bd = bdvec::create(exec, gko::dim<2>(discretization_points, 1));
+
+        std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
+            gko::log::Convergence<ValueType>::create(exec);
+
+        auto iter_stop =
+            gko::stop::Iteration::build().with_max_iters(MAX_ITER).on(exec);
+        auto tol_stop = gko::stop::ResidualNorm<ValueType>::build()
+                            .with_reduction_factor(reduction_factor)
+                            .on(exec);
+        iter_stop->add_logger(logger);
+        tol_stop->add_logger(logger);
+
+
+        // Generate solver and solve the system
+        auto solver =
+            cg::build()
+                .with_criteria(gko::share(iter_stop), gko::share(tol_stop)).on(exec)
+                ->generate(StencilMatrix<ValueType, BoundaryType>::create(exec, lend(bd), dimx, dimy, dimz));
+        exec->synchronize();
+
+
+        std::chrono::nanoseconds time(0);
+        auto tic = std::chrono::steady_clock::now();    
+        solver->apply(lend(rhs), lend(u));    
+        auto toc = std::chrono::steady_clock::now();
+        time += std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic);
+
+
+        auto time_ms = static_cast<double>(time.count()) / 1000000.0 ;
+        std::cout << "CG iteration count: " << logger->get_num_iterations() << std::endl;
+        std::cout << "CG execution time [ms]: " << time_ms << std::endl;
+        //std::cout << "CG converged: " << (logger->has_converged()? "yes":"no") << std::endl;
+        std::cout << "\nSolve complete.\n";
         
-    std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
-        gko::log::Convergence<ValueType>::create(exec);
+        keeper.updateDynamicAtt(recordId, dynAttTimeSol, time_ms);
+        keeper.updateDynamicAtt(recordId, dynAttTimeTotal, time_ms);
+        //keeper.updateDynamicAtt(recordId, dynAttResidualStart, result.residualStart);
+        //keeper.updateDynamicAtt(recordId, dynAttResidualFinal, result.residualEnd);
+        keeper.updateDynamicAtt(recordId, dynAttIterationsTaken, double(logger->get_num_iterations()));
 
-    auto iter_stop =
-        gko::stop::Iteration::build().with_max_iters(max_num_iter).on(exec);
-    auto tol_stop = gko::stop::ResidualNorm<ValueType>::build()
-                        .with_reduction_factor(reduction_factor)
-                        .on(exec);
-    iter_stop->add_logger(logger);
-    tol_stop->add_logger(logger);
-
-
-    // Generate solver and solve the system
-    auto solver =
-        cg::build()
-            .with_criteria(gko::share(iter_stop), gko::share(tol_stop))
-            .on(exec)
-            ->generate(StencilMatrix<ValueType, BoundaryType>::create(
-                exec, lend(bd), dimx, dimy, dimz));
-    exec->synchronize();
-
-
-    std::chrono::nanoseconds time(0);
-    auto tic = std::chrono::steady_clock::now();    
-    solver->apply(lend(rhs), lend(u));    
-    auto toc = std::chrono::steady_clock::now();
-    time += std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic);
-
-    std::cout << "CG iteration count: " << logger->get_num_iterations() << std::endl;
-    std::cout << "CG execution time [ms]: " << static_cast<double>(time.count()) / 1000000.0 << std::endl;
-
-    std::cout << "\nSolve complete.\n";
+    }
+    keeper.saveJson(KEEPER_FILENAME);
 
     //print_solution(lend(u), dimx, dimy, dimz);
-    //storeVTI(lend(u), dimx, dimy, dimz, "solution.vti");
+    //storeVTI(lend(u), dimx, dimy, dimz, "solution.vti");    
+}
+
+
+int main(int argc, char *argv[]){
+
+    // CLI for performance test
+    auto cli =
+        (clipp::option("--cardinality") & clipp::value("cardinality", CARDINALITY) % "Must be 1 or 3",
+         clipp::option("--domain_size") & clipp::integer("domain_size", DOMAIN_SIZE) % "Voxels along each dimension of the cube domain",
+         clipp::option("--max_iter") & clipp::integer("max_iter", MAX_ITER) % "Maximum solver iterations",
+         clipp::option("--tol") & clipp::number("tol", TOL) % "Absolute tolerance for convergence",
+         clipp::option("--keeper_filename ") & clipp::value("keeper_filename", KEEPER_FILENAME) % "Output perf keeper filename",
+         clipp::option("--times ") & clipp::integer("times", TIMES) % "Times to run the experiment");
+
+    if (!clipp::parse(argc, argv, cli)) {
+        auto fmt = clipp::doc_formatting{}.doc_column(31);
+        std::cout << make_man_page(cli, argv[0], fmt) << '\n';
+        return -1;
+    }
+    run();
 }
