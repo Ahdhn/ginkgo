@@ -38,6 +38,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 #include <ginkgo/ginkgo.hpp>
 
+template <typename T>
+inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y,
+               const T dim_z)
+{
+    return k * dim_y * dim_z + j * dim_y + i;
+}
+
+template<typename T>
+void storeVTI(gko::matrix::Dense<T>* mat, std::size_t dimx, std::size_t dimy, std::size_t dimz, std::string filename) {
+
+	std::string wholeExtent = std::string("0 ") + std::to_string(dimx) + std::string(" ") + std::string("0 ") + std::to_string(dimy) + std::string(" ") + std::string("0 ") + std::to_string(dimz) + std::string(" ");
+	std::string spacing = std::to_string(1) + std::string(" ") + std::to_string(1) + std::string(" ") + std::to_string(1) + std::string(" ");
+
+	std::ofstream out(filename, std::ios::out | std::ios::binary);
+	if (!out.is_open()) {
+		std::cout << "Error(!): Unable to open the file " << filename << "\n";
+	}
+	out.precision(17);
+
+	out << "<?xml version=\"1.0\"?>" << std::endl;
+	out << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+	out << std::string("<ImageData WholeExtent=\"") + wholeExtent + std::string("\" Origin=\"") + std::to_string(0) + std::string(" ") + std::to_string(0) + std::string(" ") + std::to_string(0) + std::string("\" Spacing=\"") + spacing + std::string("\">\n");
+	std::string pieceExtent = std::string("0 ") + std::to_string(dimx) + std::string(" ") + std::string("0 ") + std::to_string(dimy) + std::string(" ") + std::string("0 ") + std::to_string(dimz) + std::string(" ");
+	out << std::string("<Piece Extent=\"") + pieceExtent + std::string("\" >") << std::endl;
+
+
+	out << std::string("<CellData>\n");
+	out << "<DataArray type=\"Float64\" NumberOfComponents=\"";
+	out << 1;
+	out << "\" Name=\"";
+	out << "density";
+	out << "\" format=\"ascii\">\n";
+    for (std::size_t k = 0; k < dimz; k++) {
+        for (std::size_t j = 0; j < dimy; j++) {
+	        for (std::size_t i = 0; i < dimx; i++) {
+
+				out << mat->at(pitch(i,j,k, dimx, dimy, dimz),0) << " ";
+				out << "\t";
+			}
+			out << "\n";
+		}
+		out << "\n";
+	}
+	out << std::string("</DataArray>\n");
+	out << std::string("</CellData>\n");
+
+
+	out << std::string("</Piece>\n");
+	out << std::string(" </ImageData>\n");
+	out << std::string(" </VTKFile>\n");
+	out.close();
+}
 
 // A CUDA kernel implementing the stencil, which will be used if running on the
 // CUDA executor. Unfortunately, NVCC has serious problems interpreting some
@@ -47,12 +99,7 @@ void stencil_kernel(std::size_t size, BoundaryType *bd,
                     const ValueType *input, ValueType *output, std::size_t dimx,
                     std::size_t dimy, std::size_t dimz, bool init);
 
-template <typename T>
-inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y,
-               const T dim_z)
-{
-    return k * dim_y * dim_z + j * dim_y + i;
-}
+
 
 // A stencil matrix class representing the 7pt stencil linear operator.
 // We include the gko::EnableLinOp mixin which implements the entire LinOp
@@ -248,8 +295,7 @@ int main(int argc, char *argv[])
 {
     // Some shortcuts
     using ValueType = double;
-    using BoundaryType =
-        float;  // TODO this should be int8_t but this gives compile errors
+    using BoundaryType = float;  // TODO this should be int8_t but this gives compile errors
     using RealValueType = gko::remove_complex<ValueType>;
     using IndexType = int;
 
@@ -260,14 +306,14 @@ int main(int argc, char *argv[])
 
     gko::size_type max_num_iter = 1000;
     const RealValueType reduction_factor{1e-10};
-    uint32_t dimx = 4;
-    uint32_t dimy = 4;
-    uint32_t dimz = 4;
+    uint32_t dimx = 50;
+    uint32_t dimy = 50;
+    uint32_t dimz = 50;
     gko::size_type discretization_points = dimx * dimy * dimz;
 
     // executor where Ginkgo will perform the computation
-    //const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
-    const auto exec = gko::OmpExecutor::create();
+    const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
+    //const auto exec = gko::OmpExecutor::create();
 
     // executor used by the application
     const auto app_exec = exec->get_master();
@@ -298,7 +344,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    
     auto bd = bdvec::create(exec, gko::dim<2>(discretization_points, 1));
         
     std::shared_ptr<const gko::log::Convergence<ValueType>> logger =
@@ -334,5 +380,6 @@ int main(int argc, char *argv[])
 
     std::cout << "\nSolve complete.\n";
 
-    print_solution(lend(u), dimx, dimy, dimz);
+    //print_solution(lend(u), dimx, dimy, dimz);
+    //storeVTI(lend(u), dimx, dimy, dimz, "solution.vti");
 }
