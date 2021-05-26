@@ -38,11 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace {
 
 template <typename T>
-__device__ __forceinline__ T pitch(const T i, const T j, const T k,
-                                   const T dim_x, const T dim_y, const T dim_z)
+__device__ __forceinline__  T pitch(const T i, const T j, const T k, const T c, const T dim_x, const T dim_y, const T dim_z)
 {
-    return k * dim_y * dim_z + j * dim_y + i;
+    return c * dim_x * dim_y * dim_z + k * dim_y * dim_z + j * dim_y + i;
 }
+
 
 // a parallel CUDA kernel that computes the application of a 3 point stencil
 template <typename ValueType, typename BoundaryType>
@@ -65,7 +65,7 @@ __global__ void stencil_kernel_impl(std::size_t size, BoundaryType *bd,
     // printf("\n i= %d, j= %d, k= %d, output= %f, input= %f, bd= %f", i, j, k,
     //       output[thread_id], input[thread_id], bd[thread_id]);
 
-    auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
+    auto center_pitch = pitch(i, j, k, std::size_t(0), dimx, dimy, dimz);
 
     if(!init){
         if (k == 0 || k == dimz - 1) {
@@ -90,32 +90,32 @@ __global__ void stencil_kernel_impl(std::size_t size, BoundaryType *bd,
 
         if (i > 0) {
             ++numNeighb;
-            sum += input[pitch(i - 1, j, k, dimx, dimy, dimz)];
+            sum += input[pitch(i - 1, j, k, std::size_t(0), dimx, dimy, dimz)];
         }
 
         if (j > 0) {
             ++numNeighb;
-            sum += input[pitch(i, j - 1, k, dimx, dimy, dimz)];
+            sum += input[pitch(i, j - 1, k, std::size_t(0), dimx, dimy, dimz)];
         }
 
         if (k > 0) {
             ++numNeighb;
-            sum += input[pitch(i, j, k - 1, dimx, dimy, dimz)];
+            sum += input[pitch(i, j, k - 1, std::size_t(0), dimx, dimy, dimz)];
         }
 
         if (i < dimx - 1) {
             ++numNeighb;
-            sum += input[pitch(i + 1, j, k, dimx, dimy, dimz)];
+            sum += input[pitch(i + 1, j, k, std::size_t(0), dimx, dimy, dimz)];
         }
 
         if (j < dimy - 1) {
             ++numNeighb;
-            sum += input[pitch(i, j + 1, k, dimx, dimy, dimz)];
+            sum += input[pitch(i, j + 1, k, std::size_t(0), dimx, dimy, dimz)];
         }
 
         if (k < dimz - 1) {
             ++numNeighb;
-            sum += input[pitch(i, j, k + 1, dimx, dimy, dimz)];
+            sum += input[pitch(i, j, k + 1, std::size_t(0), dimx, dimy, dimz)];
         }
         const ValueType invh2 = ValueType(1.0);
         output[center_pitch] =

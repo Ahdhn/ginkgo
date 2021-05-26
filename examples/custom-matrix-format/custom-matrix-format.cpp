@@ -39,10 +39,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/ginkgo.hpp>
 
 template <typename T>
-inline T pitch(const T i, const T j, const T k, const T dim_x, const T dim_y,
-               const T dim_z)
+inline T pitch(const T i, const T j, const T k, const T c, const T dim_x, const T dim_y, const T dim_z)
 {
-    return k * dim_y * dim_z + j * dim_y + i;
+    return c * dim_x * dim_y * dim_z + k * dim_y * dim_z + j * dim_y + i;
 }
 
 template<typename T>
@@ -74,7 +73,7 @@ void storeVTI(gko::matrix::Dense<T>* mat, std::size_t dimx, std::size_t dimy, st
         for (std::size_t j = 0; j < dimy; j++) {
 	        for (std::size_t i = 0; i < dimx; i++) {
 
-				out << mat->at(pitch(i,j,k, dimx, dimy, dimz),0) << " ";
+				out << mat->at(pitch(i,j,k, std::size_t(0), dimx, dimy, dimz),0) << " ";
 				out << "\t";
 			}
 			out << "\n";
@@ -177,7 +176,7 @@ protected:
                     for (gko::size_type j = 0; j < dimy; ++j) {
                         for (gko::size_type i = 0; i < dimx; ++i) {
              
-                            auto center_pitch = pitch(i, j, k, dimx, dimy, dimz);
+                            auto center_pitch = pitch(i, j, k, gko::size_type(0), dimx, dimy, dimz);
                             if(!init){
                                 if (k == 0 || k == dimz - 1) {             
                                     m_m_bd->at(center_pitch,0) = 0;
@@ -200,32 +199,32 @@ protected:
 
                                 if (i > 0) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i - 1, j, k, dimx,dimy, dimz),0);
+                                    sum += input->at(pitch(i - 1, j, k, gko::size_type(0),dimx,dimy, dimz),0);
                                 }
 
                                 if (j > 0) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i, j - 1, k, dimx,dimy, dimz),0);
+                                    sum += input->at(pitch(i, j - 1, k, gko::size_type(0),dimx,dimy, dimz),0);
                                 }
 
                                 if (k > 0) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i, j, k - 1, dimx,dimy, dimz),0);
+                                    sum += input->at(pitch(i, j, k - 1, gko::size_type(0),dimx,dimy, dimz),0);
                                 }
 
                                 if (i < dimx - 1) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i + 1, j, k, dimx,dimy, dimz),0);
+                                    sum += input->at(pitch(i + 1, j, k, gko::size_type(0),dimx,dimy, dimz),0);
                                 }
 
                                 if (j < dimy - 1) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i, j + 1, k, dimx, dimy, dimz),0);
+                                    sum += input->at(pitch(i, j + 1, k, gko::size_type(0),dimx, dimy, dimz),0);
                                 }
 
                                 if (k < dimz - 1) {
                                     ++numNeighb;                                    
-                                    sum += input->at(pitch(i, j, k + 1, dimx,dimy, dimz),0);
+                                    sum += input->at(pitch(i, j, k + 1, gko::size_type(0),dimx,dimy, dimz),0);
                                 }
 
                                 output->at(center_pitch,0) =
@@ -285,7 +284,7 @@ void print_solution(const gko::matrix::Dense<ValueType> *u, uint32_t dimx,
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
                 printf("\n i= %u, j= %u, k= %u u= %f", i, j, k,
-                       u->get_const_values()[pitch(i, j, k, dimx, dimy, dimz)]);
+                       u->get_const_values()[pitch(i, j, k, 0u,dimx, dimy, dimz)]);
             }
         }
     }
@@ -309,7 +308,8 @@ int main(int argc, char *argv[])
     uint32_t dimx = 50;
     uint32_t dimy = 50;
     uint32_t dimz = 50;
-    gko::size_type discretization_points = dimx * dimy * dimz;
+    uint32_t cardinality = 1;
+    gko::size_type discretization_points = dimx * dimy * dimz * cardinality;
 
     // executor where Ginkgo will perform the computation
     const auto exec = gko::CudaExecutor::create(0, gko::OmpExecutor::create(), true);
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
     for (uint32_t k = 0; k < dimz; ++k) {
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
-                rhs->at(pitch(i, j, k, dimx, dimy, dimz),0) = 0.;                
+                rhs->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.;                
             }
         }
     }
@@ -335,11 +335,11 @@ int main(int argc, char *argv[])
         for (uint32_t j = 0; j < dimy; ++j) {
             for (uint32_t i = 0; i < dimx; ++i) {
                 if (k == 0) {
-                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = bdZmin;                    
+                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZmin;                    
                 } else if (k == dimz - 1) {
-                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = bdZMax;                    
+                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = bdZMax;                    
                 } else {
-                    u->at(pitch(i, j, k, dimx, dimy, dimz),0) = 0.0;                    
+                    u->at(pitch(i, j, k, 0u, dimx, dimy, dimz),0) = 0.0;                    
                 }
             }
         }
