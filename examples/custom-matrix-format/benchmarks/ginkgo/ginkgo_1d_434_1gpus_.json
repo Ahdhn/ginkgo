@@ -21,7 +21,7 @@
                                    } , 
                                    {
                                    "name" : "NEON_TimeRef" , 
-                                   "value" : "Thu May 27 21:02:14 2021"
+                                   "value" : "Thu May 27 21:02:31 2021"
                                    } , 
                                    {
                                    "name" : "maxIters" , 
@@ -30,7 +30,7 @@
                                    } , 
                                    {
                                    "name" : "voxelDomain" , 
-                                   "value" : "344_344_344" , 
+                                   "value" : "434_434_434" , 
                                    "unit" : ""
                                    } , 
                                    {
@@ -55,21 +55,21 @@
                                    "name" : "TimeToSolution" , 
                                    "unit" : "ms" , 
                                    "numSample" : 10 , 
-                                   "mean" : 1145.750077 , 
-                                   "variance" : 13355.556716 , 
-                                   "varianceUnbiased" : 14839.507463 , 
-                                   "standardDeviation" : 115.566244 , 
-                                   "standardDeviationUnbiased" : 121.817517
+                                   "mean" : 2258.690653 , 
+                                   "variance" : 73333.611355 , 
+                                   "varianceUnbiased" : 81481.790394 , 
+                                   "standardDeviation" : 270.801793 , 
+                                   "standardDeviationUnbiased" : 285.450154
                                     } , 
                                    {
                                    "name" : "TimeTotal" , 
                                    "unit" : "ms" , 
                                    "numSample" : 10 , 
-                                   "mean" : 1145.750077 , 
-                                   "variance" : 13355.556716 , 
-                                   "varianceUnbiased" : 14839.507463 , 
-                                   "standardDeviation" : 115.566244 , 
-                                   "standardDeviationUnbiased" : 121.817517
+                                   "mean" : 2258.690653 , 
+                                   "variance" : 73333.611355 , 
+                                   "varianceUnbiased" : 81481.790394 , 
+                                   "standardDeviation" : 270.801793 , 
+                                   "standardDeviationUnbiased" : 285.450154
                                     } , 
                                    {
                                    "name" : "IterationsTaken" , 
