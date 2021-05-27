@@ -1,0 +1,86 @@
+     { "RecordSet": [
+          {
+                         "StaticAttribute": [
+                                   {
+                                   "name" : "recordName" , 
+                                   "value" : "Poisson_Ginkgo_1D_1GPUs"
+                                   } , 
+                                   {
+                                   "name" : "NEON_RECORD_STORAGE_TYPE" , 
+                                   "value" : "FromRuntime"
+                                   } , 
+                                   {
+                                   "name" : "NEON_OMP" , 
+                                   "value" : "ON" , 
+                                   "unit" : "Status"
+                                   } , 
+                                   {
+                                   "name" : "NEON_NumOmpThreads" , 
+                                   "value" : "32" , 
+                                   "unit" : "Number of Threads"
+                                   } , 
+                                   {
+                                   "name" : "NEON_TimeRef" , 
+                                   "value" : "Thu May 27 10:40:41 2021"
+                                   } , 
+                                   {
+                                   "name" : "maxIters" , 
+                                   "value" : "100" , 
+                                   "unit" : ""
+                                   } , 
+                                   {
+                                   "name" : "voxelDomain" , 
+                                   "value" : "344_344_344" , 
+                                   "unit" : ""
+                                   } , 
+                                   {
+                                   "name" : "cardinality" , 
+                                   "value" : "1" , 
+                                   "unit" : ""
+                                   } , 
+                                   {
+                                   "name" : "numGPUs" , 
+                                   "value" : "1" , 
+                                   "unit" : "nGPUs"
+                                   } , 
+                                   {
+                                   "name" : "absTol" , 
+                                   "value" : "0.000000" , 
+                                   "unit" : ""
+                                   }
+                         ] , 
+
+                         "DynamicAttribute": [
+                                   {
+                                   "name" : "TimeToSolution" , 
+                                   "unit" : "ms" , 
+                                   "numSample" : 10 , 
+                                   "mean" : 1053.336263 , 
+                                   "variance" : 12880.112749 , 
+                                   "varianceUnbiased" : 14311.236388 , 
+                                   "standardDeviation" : 113.490584 , 
+                                   "standardDeviationUnbiased" : 119.629580
+                                    } , 
+                                   {
+                                   "name" : "TimeTotal" , 
+                                   "unit" : "ms" , 
+                                   "numSample" : 10 , 
+                                   "mean" : 1053.336263 , 
+                                   "variance" : 12880.112749 , 
+                                   "varianceUnbiased" : 14311.236388 , 
+                                   "standardDeviation" : 113.490584 , 
+                                   "standardDeviationUnbiased" : 119.629580
+                                    } , 
+                                   {
+                                   "name" : "IterationsTaken" , 
+                                   "unit" : "" , 
+                                   "numSample" : 10 , 
+                                   "mean" : 100.000000 , 
+                                   "variance" : 0.000000 , 
+                                   "varianceUnbiased" : 0.000000 , 
+                                   "standardDeviation" : 0.000000 , 
+                                   "standardDeviationUnbiased" : 0.000000
+                                    }
+                         ]
+          }
+     ] }

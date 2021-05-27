@@ -41,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "clipp.h"
 
 int         DOMAIN_SIZE = 8;  
-size_t      MAX_ITER = 10000;   
+size_t      MAX_ITER = 100;   
 double      TOL = 1e-10;        
 double      ZMIN = -20.0;
 double      ZMAX = +20.0;
@@ -325,15 +325,15 @@ inline void run()
 
     auto dynAttTimeSol = keeper.addDynamicAtt(recordId, "TimeToSolution", "ms");
     auto dynAttTimeTotal = keeper.addDynamicAtt(recordId, "TimeTotal", "ms");
-    auto dynAttResidualStart = keeper.addDynamicAtt(recordId, "ResidualStart", "");
-    auto dynAttResidualFinal = keeper.addDynamicAtt(recordId, "ResidualFinal", "");
+    //auto dynAttResidualStart = keeper.addDynamicAtt(recordId, "ResidualStart", "");
+    //auto dynAttResidualFinal = keeper.addDynamicAtt(recordId, "ResidualFinal", "");
     auto dynAttIterationsTaken = keeper.addDynamicAtt(recordId, "IterationsTaken", "");
 
     const RealValueType reduction_factor{TOL};
     uint32_t dimx = DOMAIN_SIZE;
     uint32_t dimy = DOMAIN_SIZE;
     uint32_t dimz = DOMAIN_SIZE;
-    uint32_t cardinality = 1;
+    uint32_t cardinality = CARDINALITY;
     gko::size_type discretization_points = dimx * dimy * dimz * cardinality;
 
     // executor where Ginkgo will perform the computation
@@ -402,9 +402,9 @@ inline void run()
 
         auto time_ms = static_cast<double>(time.count()) / 1000000.0 ;
         std::cout << "CG iteration count: " << logger->get_num_iterations() << std::endl;
-        std::cout << "CG execution time [ms]: " << time_ms << std::endl;
+        //std::cout << "CG execution time [ms]: " << time_ms << std::endl;
         //std::cout << "CG converged: " << (logger->has_converged()? "yes":"no") << std::endl;
-        std::cout << "\nSolve complete.\n";
+        std::cout << "Solve complete.\n";
         
         keeper.updateDynamicAtt(recordId, dynAttTimeSol, time_ms);
         keeper.updateDynamicAtt(recordId, dynAttTimeTotal, time_ms);

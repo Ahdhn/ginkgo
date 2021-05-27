@@ -51,7 +51,7 @@ __global__ void stencil_kernel_impl(std::size_t size, BoundaryType *bd,
                                     std::size_t dimx, std::size_t dimy,
                                     std::size_t dimz, bool init)
 {
-    const int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+    const int thread_id = blockIdx.x * blockDim.x + threadIdx.x;    
     if (thread_id >= size) {
         return;
     }
