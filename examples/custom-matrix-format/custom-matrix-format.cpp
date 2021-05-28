@@ -402,7 +402,7 @@ inline void run()
 
         auto time_ms = static_cast<double>(time.count()) / 1000000.0 ;
         std::cout << "CG iteration count: " << logger->get_num_iterations() << std::endl;
-        //std::cout << "CG execution time [ms]: " << time_ms << std::endl;
+        std::cout << "CG execution time [ms]: " << time_ms << std::endl;
         //std::cout << "CG converged: " << (logger->has_converged()? "yes":"no") << std::endl;
         std::cout << "Solve complete.\n";
         
