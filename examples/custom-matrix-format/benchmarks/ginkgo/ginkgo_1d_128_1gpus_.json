@@ -21,7 +21,7 @@
                                    } , 
                                    {
                                    "name" : "NEON_TimeRef" , 
-                                   "value" : "Fri May 28 20:01:03 2021"
+                                   "value" : "Sat May 29 13:32:58 2021"
                                    } , 
                                    {
                                    "name" : "maxIters" , 
@@ -54,27 +54,27 @@
                                    {
                                    "name" : "TimeToSolution" , 
                                    "unit" : "ms" , 
-                                   "numSample" : 10 , 
-                                   "mean" : 84.203984 , 
-                                   "variance" : 46.895795 , 
-                                   "varianceUnbiased" : 52.106438 , 
-                                   "standardDeviation" : 6.848050 , 
-                                   "standardDeviationUnbiased" : 7.218479
+                                   "numSample" : 1 , 
+                                   "mean" : 93.677554 , 
+                                   "variance" : 0.000000 , 
+                                   "varianceUnbiased" : 0.000000 , 
+                                   "standardDeviation" : 0.000000 , 
+                                   "standardDeviationUnbiased" : 0.000000
                                     } , 
                                    {
                                    "name" : "TimeTotal" , 
                                    "unit" : "ms" , 
-                                   "numSample" : 10 , 
-                                   "mean" : 84.203984 , 
-                                   "variance" : 46.895795 , 
-                                   "varianceUnbiased" : 52.106438 , 
-                                   "standardDeviation" : 6.848050 , 
-                                   "standardDeviationUnbiased" : 7.218479
+                                   "numSample" : 1 , 
+                                   "mean" : 93.677554 , 
+                                   "variance" : 0.000000 , 
+                                   "varianceUnbiased" : 0.000000 , 
+                                   "standardDeviation" : 0.000000 , 
+                                   "standardDeviationUnbiased" : 0.000000
                                     } , 
                                    {
                                    "name" : "IterationsTaken" , 
                                    "unit" : "" , 
-                                   "numSample" : 10 , 
+                                   "numSample" : 1 , 
                                    "mean" : 100.000000 , 
                                    "variance" : 0.000000 , 
                                    "varianceUnbiased" : 0.000000 , 

@@ -21,7 +21,7 @@
                                    } , 
                                    {
                                    "name" : "NEON_TimeRef" , 
-                                   "value" : "Sat May 29 13:33:24 2021"
+                                   "value" : "Sat May 29 13:33:11 2021"
                                    } , 
                                    {
                                    "name" : "maxIters" , 
@@ -30,7 +30,7 @@
                                    } , 
                                    {
                                    "name" : "voxelDomain" , 
-                                   "value" : "768_768_768" , 
+                                   "value" : "640_640_640" , 
                                    "unit" : ""
                                    } , 
                                    {
@@ -55,7 +55,7 @@
                                    "name" : "TimeToSolution" , 
                                    "unit" : "ms" , 
                                    "numSample" : 1 , 
-                                   "mean" : 16236.995780 , 
+                                   "mean" : 9392.662886 , 
                                    "variance" : 0.000000 , 
                                    "varianceUnbiased" : 0.000000 , 
                                    "standardDeviation" : 0.000000 , 
@@ -65,7 +65,7 @@
                                    "name" : "TimeTotal" , 
                                    "unit" : "ms" , 
                                    "numSample" : 1 , 
-                                   "mean" : 16236.995780 , 
+                                   "mean" : 9392.662886 , 
                                    "variance" : 0.000000 , 
                                    "varianceUnbiased" : 0.000000 , 
                                    "standardDeviation" : 0.000000 , 

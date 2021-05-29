@@ -5,9 +5,9 @@ SCRIPT_PATH=$(dirname $(realpath -s $0))
 mkdir -p ${SCRIPT_PATH}/benchmarks/ginkgo
 
 # Cardinality: 1
-for r in 128 256 512 768; do
-   echo ../../build/examples/custom-matrix-format/custom-matrix-format --cardinality 1 --domain_size ${r} --keeper_filename ${SCRIPT_PATH}/benchmarks/ginkgo/ginkgo_1d_${r}_1gpus_${t} --times 10
-   ../../build/examples/custom-matrix-format/custom-matrix-format --cardinality 1 --domain_size ${r} --keeper_filename ${SCRIPT_PATH}/benchmarks/ginkgo/ginkgo_1d_${r}_1gpus_${t} --times 10
+for r in 128 256 512 640 768; do
+   echo ../../build/examples/custom-matrix-format/custom-matrix-format --cardinality 1 --domain_size ${r} --keeper_filename ${SCRIPT_PATH}/benchmarks/ginkgo/ginkgo_1d_${r}_1gpus_${t} --times 1 --max_iter 100
+   ../../build/examples/custom-matrix-format/custom-matrix-format --cardinality 1 --domain_size ${r} --keeper_filename ${SCRIPT_PATH}/benchmarks/ginkgo/ginkgo_1d_${r}_1gpus_${t} --times 1 --max_iter 100
 done
 
 # Cardinality: 3
